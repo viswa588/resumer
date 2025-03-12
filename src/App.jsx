@@ -8,10 +8,12 @@ import Jobs from './components/Jobs';
 import VerifiedAccount from './components/VerifiedAccount';
 import VerifyAccount from './components/VerifyAccount';
 import HomePage from './components/Homepage';
+import ProfilePage from './components/Profile1';
+import JobPostingPage from './components/JobPostingScreen'; 
 
 function App() {
   
-  return (
+  return (  
     <Router>
       <div className="App">
         <Routes>
@@ -25,6 +27,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="home" element={<HomePage />} />
+          <Route path="profilePage" element={<ProfilePage />} />
+          <Route path="jobPostingPage" element={<JobPostingPage />} />
         </Routes>
      
       </div>

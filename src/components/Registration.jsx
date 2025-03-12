@@ -17,7 +17,7 @@ export default function Registration() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor="first-name">First Name</Label>
-              <Input id="first-name" placeholder="Jithendra" />
+              <Input id="first-name" placeholder="JohnSmith" />
             </div>
             <div>
               <Label htmlFor="last-name">Last Name</Label>
