@@ -1,5 +1,5 @@
 import { Button } from "./ui/button";
-import HomePageImage from "../assets/HomePage.png";
+import HomePageImage from "../assets/homepage.png";
 
 export default function HomePage() {
   return (
