@@ -10,6 +10,10 @@ import VerifyAccount from './components/VerifyAccount';
 import HomePage from './components/Homepage';
 import ProfilePage from './components/Profile1';
 import JobPostingPage from './components/JobPostingScreen'; 
+import TimeSheetEntry from "./components/TimeSheetEntry";
+import TimeSheetList from "./components/TimeSheetList";
+import TimeSheetApproval from "./components/TimeSheetApproval";
+
 
 function App() {
   
@@ -29,6 +33,12 @@ function App() {
           <Route path="home" element={<HomePage />} />
           <Route path="profilePage" element={<ProfilePage />} />
           <Route path="jobPostingPage" element={<JobPostingPage />} />
+          <Route path="/timesheet/new" element={<TimeSheetEntry />} />
+          <Route path="/timesheet/list" element={<TimeSheetList />} />
+          <Route path="/timesheet/edit/:id" element={<TimeSheetEntry />} />
+          <Route path="/timesheet/view/:id" element={<TimeSheetList />} />    
+          <Route path="/timesheet/approval" element={<TimeSheetApproval />} />
+
         </Routes>
      
       </div>
