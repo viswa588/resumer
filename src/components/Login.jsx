@@ -7,8 +7,35 @@ import { FaFacebook } from "react-icons/fa";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
+const validateEmail = (email) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase());
+}
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = () => { 
+    if(!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+    if(!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if(password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    // Perform login logic here
+    if(email === 'test@gmail.com' && password === 'password@123') {
+      window.location.href = '/home'; // Redirect to home page on successful login
+    }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -22,7 +49,8 @@ export default function Login() {
         <div className="mt-4 space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">E-mail</label>
-            <Input type="email" placeholder="Enter your mail" className="mt-1" />
+            <Input type="email" placeholder="Enter your mail" className="mt-1" onBlur={(e) => setEmail(e.target.value)}
+                onFocus={() => setError('')}/>
           </div>
 
           <div>
@@ -32,6 +60,8 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your Password"
                 className="mt-1 pr-10"
+                onBlur={(e) => setPassword(e.target.value)}
+                onFocus={() => setError('')}
               />
               <button
                 type="button"
@@ -48,7 +78,7 @@ export default function Login() {
           <a href="#" className="hover:underline">Forgot Password?</a>
         </div>
 
-        <Button className="w-full mt-4 bg-green-500 hover:bg-green-600">LOG IN</Button>
+        <Button onClick={() => handleLogin()} className="w-full mt-4 bg-green-500 hover:bg-green-600">LOG IN</Button>
         
         <div className="flex items-center gap-2 mt-4">
           <Separator className="flex-1" />

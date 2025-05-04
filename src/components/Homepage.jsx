@@ -2,6 +2,14 @@ import { Button } from "./ui/button";
 import HomePageImage from "../assets/homepage.png";
 
 export default function HomePage() {
+
+
+  const handleButtonClick = () => {
+
+    window.location.href = "/profile"; // Redirect to the profile page
+  }
+
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 bg-gray-100">
       {/* Container */}
@@ -24,7 +32,7 @@ export default function HomePage() {
         </p>
 
         {/* CTA Button */}
-        <Button className="mt-6 bg-green-600 hover:bg-green-700 px-6 py-3 text-lg rounded-lg">
+        <Button onClick={()=> handleButtonClick()} className="mt-6 bg-green-600 hover:bg-green-700 px-6 py-3 text-lg rounded-lg">
           Let’s Get Started →
         </Button>
       </div>

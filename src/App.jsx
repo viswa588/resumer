@@ -30,9 +30,9 @@ function App() {
           <Route path="/reset-password" element={<div>Reset Password</div>} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/jobs" element={<Jobs />} />
-          <Route path="home" element={<HomePage />} />
-          <Route path="profilePage" element={<ProfilePage />} />
-          <Route path="jobPostingPage" element={<JobPostingPage />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/profilePage" element={<ProfilePage />} />
+          <Route path="/jobPostingPage" element={<JobPostingPage />} />
           <Route path="/timesheet/new" element={<TimeSheetEntry />} />
           <Route path="/timesheet/list" element={<TimeSheetList />} />
           <Route path="/timesheet/edit/:id" element={<TimeSheetEntry />} />
