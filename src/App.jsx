@@ -10,12 +10,19 @@ import VerifyAccount from './components/VerifyAccount';
 import HomePage from './components/Homepage';
 import ProfilePage from './components/Profile1';
 import JobPostingPage from './components/JobPostingScreen'; 
+import JobEditScreen from './components/JobEditScreen';
 import TimeSheetEntry from "./components/TimeSheetEntry";
 import TimeSheetList from "./components/TimeSheetList";
 import TimeSheetApproval from "./components/TimeSheetApproval";
 import JobDetailsPage from './components/JobDetailsPage';
 import WelcomeJobPage from './components/WelcomeJobPage';
 import RolesAndResponsibilities from './components/RolesAndResponsibilities';
+
+// Employer components
+import EmployerLogin from './components/EmployerLogin';
+import EmployerDashboard from './components/EmployerDashboard';
+import EmployerJobManagement from './components/EmployerJobManagement';
+import EmployerJobApplicants from './components/EmployerJobApplicants';
 
 
 function App() {
@@ -24,8 +31,8 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<EmployerLogin />} />
+          <Route path="/login" element={<EmployerLogin />} />
           <Route path="/register" element={<Registration />} />
           <Route path="/verify-account" element={<VerifyAccount />} />
           <Route path="/verified-account" element={<VerifiedAccount />} />
@@ -46,6 +53,12 @@ function App() {
           <Route path="/timesheet/view/:id" element={<TimeSheetList />} />    
           <Route path="/timesheet/approval" element={<TimeSheetApproval />} />
 
+          {/* Employer Routes */}
+          <Route path="/employer-dashboard" element={<EmployerDashboard />} />
+          <Route path="/employer-job-management" element={<EmployerJobManagement />} />
+          <Route path="/employer-job-applicants/:jobId" element={<EmployerJobApplicants />} />
+          <Route path="/employer-job-posting" element={<JobPostingPage />} />
+          <Route path="/employer-job-edit/:id" element={<JobEditScreen />} />
         </Routes>
      
       </div>

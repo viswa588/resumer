@@ -1,8 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, LogOut } from "lucide-react";
 import FeaturedJobsPage from "./FeaturedJobsPage";
+import { useNavigate } from "react-router-dom";
 
 const UserAvatar = ({ name, src }) => {
   return (
@@ -14,6 +15,17 @@ const UserAvatar = ({ name, src }) => {
 };
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
+  
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    
+    // Redirect to login page
+    navigate('/login');
+  };
+  
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Profile Page */}
@@ -28,6 +40,17 @@ export default function ProfilePage() {
             <p className="text-gray-500 flex items-center gap-1">
               <MapPin className="w-4 h-4" /> Remote Job
             </p>
+          </div>
+          <div className="ml-auto">
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
         </CardHeader>
       </Card>

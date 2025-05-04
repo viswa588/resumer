@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt } from 'react-icons/fa';
+import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import HistoryModal from './HistoryModal';
 import JobCard from './JobCard';
@@ -48,6 +48,16 @@ const Profile = () => {
 
   const handleVideoModalClose = () => {
     setIsVideoModalOpen(false);
+  };
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('appliedJobs');
+    
+    // Redirect to login page
+    navigate('/login');
   };
 
   
@@ -143,6 +153,11 @@ const Profile = () => {
             <FaHome className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
             <FaBell className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
             <FaEnvelope className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
+            <FaSignOutAlt 
+              className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-red-500" 
+              onClick={handleLogout}
+              title="Logout"
+            />
           </div>
         </div>
       </div>

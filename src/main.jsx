@@ -2,6 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { initializeSampleData } from './data/sampleData'
+
+// Initialize sample data when the application starts
+initializeSampleData();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

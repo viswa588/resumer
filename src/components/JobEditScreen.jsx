@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 
-export default function JobPostingPage() {
+export default function JobEditScreen() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [formData, setFormData] = useState({
     title: "",
     company: "",
@@ -26,19 +26,56 @@ export default function JobPostingPage() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [employerEmail, setEmployerEmail] = useState("");
+  const [notFound, setNotFound] = useState(false);
+  const [originalJob, setOriginalJob] = useState(null);
 
-  // Get employer email from localStorage
+  // Load job data on component mount
   useEffect(() => {
-    const email = localStorage.getItem('userEmail');
-    if (email) {
-      setEmployerEmail(email);
-      setFormData(prev => ({
-        ...prev,
-        contactEmail: email
-      }));
-    }
-  }, []);
+    const loadJob = () => {
+      try {
+        // Get all jobs from localStorage
+        const allJobs = JSON.parse(localStorage.getItem('employerJobs') || '[]');
+        
+        // Find the job with the matching ID
+        const jobId = parseInt(id);
+        const job = allJobs.find(job => job.id === jobId);
+        
+        if (job) {
+          setOriginalJob(job);
+          
+          // Format requirements if it's an array
+          const requirements = Array.isArray(job.requirements) 
+            ? job.requirements.join('\n') 
+            : job.requirements || '';
+          
+          // Format application deadline if it exists
+          const applicationDeadline = job.applicationDeadline 
+            ? job.applicationDeadline.split('T')[0] // Extract just the date part
+            : '';
+          
+          setFormData({
+            title: job.title || "",
+            company: job.company || "",
+            location: job.location || "",
+            salary: job.salary || "",
+            jobType: job.jobType || "",
+            description: job.description || "",
+            requirements: requirements,
+            applicationDeadline: applicationDeadline,
+            experienceLevel: job.experienceLevel || "",
+            contactEmail: job.contactEmail || ""
+          });
+        } else {
+          setNotFound(true);
+        }
+      } catch (error) {
+        console.error("Error loading job:", error);
+        setNotFound(true);
+      }
+    };
+    
+    loadJob();
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -94,53 +131,76 @@ export default function JobPostingPage() {
     setIsSubmitting(true);
     
     try {
-      // Create new job object
-      const newJob = {
-        id: Date.now(), // Use timestamp as unique ID
-        ...formData,
-        employerEmail: employerEmail,
-        postedDate: new Date().toISOString(),
-        status: 'active'
+      // Process requirements - convert from string to array if needed
+      const processedRequirements = formData.requirements.trim() 
+        ? formData.requirements.split('\n').filter(req => req.trim() !== '')
+        : [];
+      
+      // Create updated job object
+      const updatedJob = {
+        ...originalJob,
+        title: formData.title,
+        company: formData.company,
+        location: formData.location,
+        salary: formData.salary,
+        jobType: formData.jobType,
+        description: formData.description,
+        requirements: processedRequirements,
+        applicationDeadline: formData.applicationDeadline,
+        experienceLevel: formData.experienceLevel,
+        contactEmail: formData.contactEmail,
+        updatedDate: new Date().toISOString()
       };
       
-      // Get existing jobs from localStorage
+      // Get all jobs from localStorage
       const allJobs = JSON.parse(localStorage.getItem('employerJobs') || '[]');
       
-      // Add new job
-      allJobs.push(newJob);
+      // Find the index of the job to update
+      const jobIndex = allJobs.findIndex(job => job.id === parseInt(id));
       
-      // Save back to localStorage
-      localStorage.setItem('employerJobs', JSON.stringify(allJobs));
-      
-      setSubmitSuccess(true);
-      
-      // Reset form
-      setFormData({
-        title: "",
-        company: "",
-        location: "",
-        salary: "",
-        jobType: "",
-        description: "",
-        requirements: "",
-        applicationDeadline: "",
-        experienceLevel: "",
-        contactEmail: employerEmail
-      });
-      
-      // Navigate to job management page after short delay
-      setTimeout(() => {
-        navigate('/employer-job-management');
-      }, 1500);
+      if (jobIndex !== -1) {
+        // Update the job
+        allJobs[jobIndex] = updatedJob;
+        
+        // Save back to localStorage
+        localStorage.setItem('employerJobs', JSON.stringify(allJobs));
+        
+        setSubmitSuccess(true);
+        
+        // Navigate to job management page after short delay
+        setTimeout(() => {
+          navigate('/employer-job-management');
+        }, 1500);
+      } else {
+        throw new Error("Job not found");
+      }
     } catch (error) {
-      console.error("Error saving job:", error);
+      console.error("Error updating job:", error);
       setErrors({
-        submit: "Failed to save job. Please try again."
+        submit: "Failed to update job. Please try again."
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            Job not found. The job may have been deleted or you don't have permission to edit it.
+          </div>
+          <Button 
+            onClick={() => navigate('/employer-job-management')}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Back to Job Management
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -156,7 +216,7 @@ export default function JobPostingPage() {
         
         {submitSuccess && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            Job posted successfully! Redirecting to job management...
+            Job updated successfully! Redirecting to job management...
           </div>
         )}
         
@@ -167,10 +227,10 @@ export default function JobPostingPage() {
         )}
         
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Job Posting Form */}
+          {/* Job Edit Form */}
           <Card>
             <CardHeader>
-              <CardTitle>Post a New Job</CardTitle>
+              <CardTitle>Edit Job</CardTitle>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={handleSubmit}>
@@ -315,39 +375,16 @@ export default function JobPostingPage() {
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      Posting Job...
+                      Updating Job...
                     </>
                   ) : (
                     <>
                       <Save size={16} />
-                      Post Job
+                      Save Changes
                     </>
                   )}
                 </Button>
               </form>
-            </CardContent>
-          </Card>
-          
-          {/* Job Alert Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Job Alerts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email-alerts">Email Alerts</Label>
-                  <Switch id="email-alerts" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="sms-alerts">SMS Alerts</Label>
-                  <Switch id="sms-alerts" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="push-alerts">Push Notifications</Label>
-                  <Switch id="push-alerts" />
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

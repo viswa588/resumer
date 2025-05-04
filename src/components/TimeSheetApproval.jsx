@@ -1,5 +1,5 @@
 // components/TimeSheetApproval.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -27,6 +27,7 @@ import {
 import { Badge } from "./ui/badge";
 import { Search } from "lucide-react";
 import PaymentProcessing from "./PaymentProcessing";
+import { initializeSampleData } from "../data/sampleData";
 
 const TimeSheetApproval = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,39 +35,29 @@ const TimeSheetApproval = () => {
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTimesheet, setSelectedTimesheet] = useState(null);
+  const [timesheets, setTimesheets] = useState([]);
 
-  const [timesheets, setTimesheets] = useState([
-    {
-      id: 1,
-      studentName: "John Doe",
-      studentId: "STU001",
-      weekEnding: "2024-01-21",
-      totalHours: 40,
-      status: "Pending",
-      department: "Computer Science",
-      submittedDate: "2024-01-22",
-    },
-    {
-      id: 2,
-      studentName: "Jane Smith",
-      studentId: "STU002",
-      weekEnding: "2024-01-21",
-      totalHours: 35,
-      status: "Approved",
-      department: "Engineering",
-      submittedDate: "2024-01-22",
-    },
-    {
-      id: 3,
-      studentName: "Mike Johnson",
-      studentId: "STU003",
-      weekEnding: "2024-01-21",
-      totalHours: 38,
-      status: "Rejected",
-      department: "Mathematics",
-      submittedDate: "2024-01-22",
-    },
-  ]);
+  useEffect(() => {
+    // Initialize sample data if it doesn't exist
+    initializeSampleData();
+    
+    // Load timesheets from localStorage
+    const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    
+    // Map the timesheets to match the expected format
+    const formattedTimesheets = storedTimesheets.map(ts => ({
+      id: ts.id,
+      studentName: ts.userName,
+      studentId: ts.userId,
+      weekEnding: ts.weekEnding,
+      totalHours: ts.totalHours,
+      status: ts.status,
+      department: ts.jobTitle,
+      submittedDate: ts.submittedDate
+    }));
+    
+    setTimesheets(formattedTimesheets);
+  }, []);
 
   const getStatusBadge = (status) => {
     const statusMap = {
