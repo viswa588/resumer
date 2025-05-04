@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import HistoryModal from './HistoryModal';
 import JobCard from './JobCard';
 import JobModal from './JobModal';
@@ -9,6 +10,7 @@ import { jobs } from '../data/jobs';
 
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [image, setImage] = useState(null);
   const [about, setAbout] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -17,6 +19,28 @@ const Profile = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [acceptedJobs, setAcceptedJobs] = useState([]);
+  const [timesheets, setTimesheets] = useState([]);
+
+  useEffect(() => {
+    // Load accepted jobs from localStorage
+    const jobOfferStatuses = JSON.parse(localStorage.getItem('jobOfferStatuses') || '{}');
+    const acceptedJobIds = Object.keys(jobOfferStatuses)
+      .filter(id => jobOfferStatuses[id] === 'accepted')
+      .map(id => parseInt(id));
+    
+    const acceptedJobsData = jobs.filter(job => acceptedJobIds.includes(job.id));
+    setAcceptedJobs(acceptedJobsData);
+    
+    // Load applied jobs from localStorage
+    const appliedJobIds = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
+    const appliedJobsData = jobs.filter(job => appliedJobIds.includes(job.id));
+    setAppliedJobs(appliedJobsData);
+
+    // Load timesheets from localStorage
+    const timesheetsData = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    setTimesheets(timesheetsData);
+  }, []);
 
   const handleVideoModalOpen = () => {
     setIsVideoModalOpen(true);
@@ -169,6 +193,83 @@ const Profile = () => {
               <p className="text-gray-700">
                 {about || "No information provided yet."}
               </p>
+            )}
+            
+            {/* Accepted Jobs Section */}
+            {acceptedJobs.length > 0 && (
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3">Your Current Position</h3>
+                {acceptedJobs.map(job => (
+                  <div key={job.id} className="bg-blue-50 rounded-lg p-4 mb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{job.title}</h4>
+                        <p className="text-gray-600">{job.company}</p>
+                        <p className="text-gray-500 text-sm">{job.location}</p>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <button
+                          onClick={() => navigate(`/roles-and-responsibilities/${job.id}`)}
+                          className="flex items-center text-blue-600 hover:text-blue-800"
+                        >
+                          <FaFileAlt className="mr-1" />
+                          View Roles & Responsibilities
+                        </button>
+                        <button
+                          onClick={() => navigate(`/timesheet/new/${job.id}`)}
+                          className="flex items-center text-green-600 hover:text-green-800"
+                        >
+                          <FaFileAlt className="mr-1" />
+                          Enter Timesheet
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Recent Timesheets */}
+                    {timesheets.filter(ts => ts.jobId === job.id).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Timesheets</h5>
+                        <div className="space-y-2">
+                          {timesheets
+                            .filter(ts => ts.jobId === job.id)
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))
+                            .slice(0, 3)
+                            .map(timesheet => (
+                              <div key={timesheet.id} className="bg-white p-2 rounded-md text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">
+                                    {new Date(timesheet.date).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-blue-600 cursor-pointer" onClick={() => navigate(`/timesheet/view/${timesheet.id}`)}>
+                                    View Details
+                                  </span>
+                                </div>
+                                <div className="mt-1">
+                                  <span className="text-gray-500">
+                                    {timesheet.entries.reduce((total, entry) => {
+                                      const entryTotal = entry.hours.reduce((sum, h) => sum + (parseFloat(h) || 0), 0);
+                                      return total + entryTotal;
+                                    }, 0)} hours total
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                        {timesheets.filter(ts => ts.jobId === job.id).length > 3 && (
+                          <div className="mt-2 text-center">
+                            <button 
+                              onClick={() => navigate('/timesheet/list')}
+                              className="text-sm text-blue-600 hover:underline"
+                            >
+                              View all timesheets
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

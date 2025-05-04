@@ -10,7 +10,23 @@ export const jobs = [
       "Strong proficiency in JavaScript/ES6+",
       "Experience with modern frontend build tools",
       "Knowledge of responsive design principles"
-    ]
+    ],
+    salary: "$120,000 - $150,000",
+    jobType: "Full-time",
+    experienceLevel: "Senior",
+    postedDate: "2023-10-15",
+    applicationDeadline: "2023-11-15",
+    hoursPerWeek: 40,
+    startDate: "2023-12-01",
+    endDate: "2024-12-01",
+    benefits: [
+      "Health, dental, and vision insurance",
+      "401(k) matching",
+      "Flexible work hours",
+      "Remote work options",
+      "Professional development budget"
+    ],
+    contactEmail: "careers@techcorp.com"
   },
   {
     id: 2,
@@ -23,7 +39,23 @@ export const jobs = [
       "Strong knowledge of SQL and NoSQL databases",
       "Experience with microservices architecture",
       "Understanding of API design principles"
-    ]
+    ],
+    salary: "$110,000 - $140,000",
+    jobType: "Full-time",
+    experienceLevel: "Mid-Senior",
+    postedDate: "2023-10-20",
+    applicationDeadline: "2023-11-20",
+    hoursPerWeek: 40,
+    startDate: "2023-12-15",
+    endDate: "2024-12-15",
+    benefits: [
+      "Comprehensive health insurance",
+      "Retirement plan with company match",
+      "Unlimited PTO",
+      "Hybrid work model",
+      "Annual learning stipend"
+    ],
+    contactEmail: "jobs@dataflow.com"
   },
   {
     id: 3,
@@ -36,7 +68,23 @@ export const jobs = [
       "Knowledge of React and Node.js",
       "Database design and optimization skills",
       "Understanding of cloud services (AWS/Azure)"
-    ]
+    ],
+    salary: "$100,000 - $130,000",
+    jobType: "Full-time",
+    experienceLevel: "Mid-level",
+    postedDate: "2023-10-18",
+    applicationDeadline: "2023-11-18",
+    hoursPerWeek: 35,
+    startDate: "2023-12-10",
+    endDate: "2024-12-10",
+    benefits: [
+      "Medical and dental coverage",
+      "Stock options",
+      "Flexible working hours",
+      "Remote work available",
+      "Gym membership"
+    ],
+    contactEmail: "recruiting@innovationlabs.com"
   },
   {
     id: 4,

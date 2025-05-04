@@ -13,6 +13,9 @@ import JobPostingPage from './components/JobPostingScreen';
 import TimeSheetEntry from "./components/TimeSheetEntry";
 import TimeSheetList from "./components/TimeSheetList";
 import TimeSheetApproval from "./components/TimeSheetApproval";
+import JobDetailsPage from './components/JobDetailsPage';
+import WelcomeJobPage from './components/WelcomeJobPage';
+import RolesAndResponsibilities from './components/RolesAndResponsibilities';
 
 
 function App() {
@@ -30,10 +33,14 @@ function App() {
           <Route path="/reset-password" element={<div>Reset Password</div>} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/:id" element={<JobDetailsPage />} />
+          <Route path="/welcome-job/:id" element={<WelcomeJobPage />} />
+          <Route path="/roles-and-responsibilities/:id" element={<RolesAndResponsibilities />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/profilePage" element={<ProfilePage />} />
           <Route path="/jobPostingPage" element={<JobPostingPage />} />
           <Route path="/timesheet/new" element={<TimeSheetEntry />} />
+          <Route path="/timesheet/new/:id" element={<TimeSheetEntry />} />
           <Route path="/timesheet/list" element={<TimeSheetList />} />
           <Route path="/timesheet/edit/:id" element={<TimeSheetEntry />} />
           <Route path="/timesheet/view/:id" element={<TimeSheetList />} />    

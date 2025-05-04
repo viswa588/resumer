@@ -1,5 +1,6 @@
 // components/TimeSheetEntry.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -20,10 +21,14 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { format } from "date-fns";
+import { jobs } from "../data/jobs";
 
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const TimeSheetEntry = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [currentJob, setCurrentJob] = useState(null);
   const [entries, setEntries] = useState([
     {
       project: "",
@@ -32,11 +37,42 @@ const TimeSheetEntry = () => {
     },
   ]);
 
-  const projects = [
-    { id: 1, name: "Project A" },
-    { id: 2, name: "Project B" },
-    { id: 3, name: "Project C" },
-  ];
+  // Load job details if ID is provided
+  useEffect(() => {
+    if (id) {
+      const jobId = parseInt(id);
+      const foundJob = jobs.find(j => j.id === jobId);
+      
+      if (foundJob) {
+        setCurrentJob(foundJob);
+        
+        // Pre-populate the first entry with the job details
+        const updatedEntries = [...entries];
+        updatedEntries[0].project = `${foundJob.title} - ${foundJob.company}`;
+        setEntries(updatedEntries);
+      }
+    }
+  }, [id]);
+
+  // Get projects - include current job if available
+  const getProjects = () => {
+    const defaultProjects = [
+      { id: 1, name: "Project A" },
+      { id: 2, name: "Project B" },
+      { id: 3, name: "Project C" },
+    ];
+    
+    if (currentJob) {
+      return [
+        { id: currentJob.id, name: `${currentJob.title} - ${currentJob.company}` },
+        ...defaultProjects
+      ];
+    }
+    
+    return defaultProjects;
+  };
+
+  const projects = getProjects();
 
   const tasks = [
     { id: 1, name: "Task A" },
@@ -70,7 +106,29 @@ const TimeSheetEntry = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Submitted entries:", entries);
+    
+    // Save timesheet entries to localStorage
+    const timesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    const newTimesheet = {
+      id: Date.now(),
+      jobId: currentJob ? currentJob.id : null,
+      date: new Date().toISOString(),
+      entries: entries,
+    };
+    
+    timesheets.push(newTimesheet);
+    localStorage.setItem('timesheets', JSON.stringify(timesheets));
+    
+    // Navigate back to profile or timesheet list
+    if (currentJob) {
+      navigate('/profile');
+    } else {
+      navigate('/timesheet/list');
+    }
+  };
+
+  const handleGoBack = () => {
+    navigate(currentJob ? '/profile' : '/timesheet/list');
   };
 
   return (
@@ -79,8 +137,24 @@ const TimeSheetEntry = () => {
         <Card className="max-w-6xl mx-auto">
           <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
-              <CardTitle className="text-2xl font-bold">Timesheet Entry</CardTitle>
-              <CardDescription>Enter your project hours for the week</CardDescription>
+              <div className="flex items-center mb-4">
+                <button 
+                  onClick={handleGoBack}
+                  className="flex items-center text-blue-600 hover:text-blue-800 mr-4"
+                >
+                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                  </svg>
+                  Back
+                </button>
+                <CardTitle className="text-2xl font-bold">Timesheet Entry</CardTitle>
+              </div>
+              <CardDescription>
+                {currentJob 
+                  ? `Enter your hours for ${currentJob.title} at ${currentJob.company}`
+                  : "Enter your project hours for the week"
+                }
+              </CardDescription>
             </div>
             <Button variant="outline" onClick={handleAddRow}>Add Row</Button>
           </CardHeader>
@@ -157,7 +231,6 @@ const TimeSheetEntry = () => {
           <CardFooter className="flex justify-end gap-4">
             <Button variant="outline" type="button">Save Draft</Button>
             <Button type="submit" onClick={handleSubmit}>Submit</Button>
-            {/* <Button variant="secondary" type="button">Approve</Button> */}
           </CardFooter>
         </Card>
       </div>
