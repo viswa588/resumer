@@ -1,8 +1,21 @@
 import React from 'react';
 import JobDetails from './JobDetails';
 
-const JobModal = ({ job, onClose, onApply, isApplied }) => {
+const JobModal = ({ job, onClose, onApply, isApplied, isStudentFriendly }) => {
   if (!job) return null;
+
+  // Calculate if job is student-friendly if not explicitly provided
+  const studentFriendly = isStudentFriendly !== undefined ? isStudentFriendly : (
+    job.jobType === 'Part-time' || 
+    job.experienceLevel === 'Entry' || 
+    (job.hoursPerWeek && job.hoursPerWeek <= 20) ||
+    (job.benefits && job.benefits.some(benefit => 
+      benefit.toLowerCase().includes('flexible') || 
+      benefit.toLowerCase().includes('schedule') ||
+      benefit.toLowerCase().includes('campus') ||
+      benefit.toLowerCase().includes('student')
+    ))
+  );
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -12,6 +25,16 @@ const JobModal = ({ job, onClose, onApply, isApplied }) => {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{job.title}</h2>
             <p className="text-xl text-blue-600 mt-1">{job.company}</p>
+            
+            {/* Student-friendly badge */}
+            {studentFriendly && (
+              <div className="inline-flex items-center mt-2 bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                </svg>
+                Student-Friendly
+              </div>
+            )}
           </div>
           <button 
             onClick={onClose}
@@ -23,7 +46,7 @@ const JobModal = ({ job, onClose, onApply, isApplied }) => {
         </div>
 
         {/* Job details */}
-        <JobDetails job={job} />
+        <JobDetails job={job} isStudentFriendly={studentFriendly} />
 
         {/* Action buttons */}
         <div className="mt-6 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">

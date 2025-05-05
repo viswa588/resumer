@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const JobCard = ({ job, onSelect, onApply, isApplied, offerStatus }) => {
+const JobCard = ({ job, onSelect, onApply, isApplied, offerStatus, isStudentFriendly }) => {
   // Determine button text and style based on application and offer status
   const getButtonConfig = () => {
     if (offerStatus === 'accepted') {
@@ -33,8 +33,31 @@ const JobCard = ({ job, onSelect, onApply, isApplied, offerStatus }) => {
 
   const buttonConfig = getButtonConfig();
 
+  // Calculate if job is student-friendly if not explicitly provided
+  const studentFriendly = isStudentFriendly !== undefined ? isStudentFriendly : (
+    job.jobType === 'Part-time' || 
+    job.experienceLevel === 'Entry' || 
+    (job.hoursPerWeek && job.hoursPerWeek <= 20) ||
+    (job.benefits && job.benefits.some(benefit => 
+      benefit.toLowerCase().includes('flexible') || 
+      benefit.toLowerCase().includes('schedule') ||
+      benefit.toLowerCase().includes('campus') ||
+      benefit.toLowerCase().includes('student')
+    ))
+  );
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-100">
+    <div className={`${studentFriendly ? 'border-l-4 border-green-500' : ''} bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-100`}>
+      {/* Student-friendly badge */}
+      {studentFriendly && (
+        <div className="flex items-center mb-3 bg-green-50 text-green-700 text-xs font-medium px-2.5 py-0.5 rounded-full w-fit">
+          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+          </svg>
+          Student-Friendly
+        </div>
+      )}
+      
       <div className="flex justify-between">
         <div className="mb-4">
           <h3 className="text-xl font-semibold text-gray-900 mb-1">{job.title}</h3>
@@ -52,12 +75,12 @@ const JobCard = ({ job, onSelect, onApply, isApplied, offerStatus }) => {
       {/* Job highlights */}
       <div className="mb-4">
         {job.jobType && (
-          <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-2 mb-2">
+          <span className={`inline-block ${job.jobType === 'Part-time' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'} text-xs px-2 py-1 rounded mr-2 mb-2`}>
             {job.jobType}
           </span>
         )}
         {job.experienceLevel && (
-          <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-2 mb-2">
+          <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mr-2 mb-2">
             {job.experienceLevel}
           </span>
         )}
@@ -68,10 +91,42 @@ const JobCard = ({ job, onSelect, onApply, isApplied, offerStatus }) => {
         )}
       </div>
       
+      {/* Hours per week - Especially important for students */}
+      {job.hoursPerWeek && (
+        <div className="mb-3 flex items-center text-sm">
+          <svg className="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span className="text-gray-600">{job.hoursPerWeek} hours/week</span>
+        </div>
+      )}
+      
       {/* Brief description */}
       <p className="text-gray-600 text-sm mb-4 line-clamp-2">
         {job.description}
       </p>
+      
+      {/* Student benefits highlight */}
+      {job.benefits && job.benefits.some(benefit => 
+        benefit.toLowerCase().includes('flexible') || 
+        benefit.toLowerCase().includes('schedule') ||
+        benefit.toLowerCase().includes('campus') ||
+        benefit.toLowerCase().includes('student')
+      ) && (
+        <div className="mb-4">
+          <p className="text-sm text-green-600 font-medium">
+            <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+            </svg>
+            Student Benefits: {job.benefits.filter(benefit => 
+              benefit.toLowerCase().includes('flexible') || 
+              benefit.toLowerCase().includes('schedule') ||
+              benefit.toLowerCase().includes('campus') ||
+              benefit.toLowerCase().includes('student')
+            ).join(', ')}
+          </p>
+        </div>
+      )}
       
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4 space-y-2 sm:space-y-0">
         <div className="flex space-x-3">

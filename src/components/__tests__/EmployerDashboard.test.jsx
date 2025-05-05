@@ -176,4 +176,122 @@ describe('EmployerDashboard', () => {
     fireEvent.click(pendingTimesheetsCard);
     expect(screen.getByText('Timesheets waiting for your approval')).toBeInTheDocument();
   });
+
+  // New tests for the enhanced features
+  test('renders new performance metrics section', async () => {
+    render(
+      <BrowserRouter>
+        <EmployerDashboard />
+      </BrowserRouter>
+    );
+    
+    // Wait for data to load
+    await waitFor(() => {
+      // Check for performance metrics section
+      expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
+      
+      // Check for specific metrics
+      expect(screen.getByText('Approval Rate')).toBeInTheDocument();
+      expect(screen.getByText('Conversion Rate')).toBeInTheDocument();
+      expect(screen.getByText('Time to Hire')).toBeInTheDocument();
+      expect(screen.getByText('Est. Revenue')).toBeInTheDocument();
+    });
+  });
+
+  test('renders top performing jobs section', async () => {
+    render(
+      <BrowserRouter>
+        <EmployerDashboard />
+      </BrowserRouter>
+    );
+    
+    // Wait for data to load
+    await waitFor(() => {
+      // Check for top performing jobs section
+      expect(screen.getByText('Top Performing Jobs')).toBeInTheDocument();
+      
+      // Check for view all button
+      expect(screen.getByText('View All')).toBeInTheDocument();
+    });
+  });
+
+  test('financial insights modal opens and displays data', async () => {
+    render(
+      <BrowserRouter>
+        <EmployerDashboard />
+      </BrowserRouter>
+    );
+    
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Est. Revenue')).toBeInTheDocument();
+    });
+    
+    // Find the Est. Revenue card and click it
+    const revenueCard = screen.getByText('Est. Revenue').closest('div').parentElement;
+    fireEvent.click(revenueCard);
+    
+    // Check if financial insights modal opens
+    expect(screen.getByText('Financial Insights')).toBeInTheDocument();
+    expect(screen.getByText('Revenue, costs, and profit analysis for your job postings')).toBeInTheDocument();
+    
+    // Check for financial metrics
+    expect(screen.getByText('Total Revenue')).toBeInTheDocument();
+    expect(screen.getByText('Total Cost')).toBeInTheDocument();
+    expect(screen.getByText('Net Profit')).toBeInTheDocument();
+    
+    // Check for revenue by job table
+    expect(screen.getByText('Revenue by Job')).toBeInTheDocument();
+  });
+
+  test('job performance modal opens and displays data', async () => {
+    render(
+      <BrowserRouter>
+        <EmployerDashboard />
+      </BrowserRouter>
+    );
+    
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Top Performing Jobs')).toBeInTheDocument();
+    });
+    
+    // Find the View All button and click it
+    const viewAllButton = screen.getByText('View All');
+    fireEvent.click(viewAllButton);
+    
+    // Check if job performance modal opens
+    expect(screen.getByText('Job Performance Analysis')).toBeInTheDocument();
+    expect(screen.getByText('Detailed performance metrics for all your job postings')).toBeInTheDocument();
+    
+    // Check for sort options
+    expect(screen.getByText('Sort by:')).toBeInTheDocument();
+    
+    // Check for table headers
+    expect(screen.getByText('Performance Score')).toBeInTheDocument();
+    expect(screen.getByText('Conversion Rate')).toBeInTheDocument();
+    expect(screen.getByText('Daily Rate')).toBeInTheDocument();
+  });
+
+  test('time filter changes update the dashboard', async () => {
+    render(
+      <BrowserRouter>
+        <EmployerDashboard />
+      </BrowserRouter>
+    );
+    
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Time Period:')).toBeInTheDocument();
+    });
+    
+    // Find the time filter dropdown
+    const timeFilter = screen.getByLabelText('Time Period:');
+    
+    // Change the filter to Last Month
+    fireEvent.change(timeFilter, { target: { value: 'month' } });
+    
+    // Check that the filter value has changed
+    expect(timeFilter.value).toBe('month');
+  });
 });

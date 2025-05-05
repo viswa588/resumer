@@ -94,7 +94,7 @@ function App() {
     <Router>
       <AuthProvider>
         <NotificationProvider>
-          <div className="App">
+          <div  className="App min-h-screen bg-gradient-to-r from-red-100 via-blue-100 to-white text-slate-800">
             <AppRoutes />
           </div>
         </NotificationProvider>

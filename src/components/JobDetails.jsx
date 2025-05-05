@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 
-const JobDetails = ({ job }) => {
+const JobDetails = ({ job, isStudentFriendly }) => {
   if (!job) return null;
 
   // Format the posted date to show as "X days ago"
@@ -15,8 +15,47 @@ const JobDetails = ({ job }) => {
     }
   };
 
+  // Calculate if job is student-friendly if not explicitly provided
+  const studentFriendly = isStudentFriendly !== undefined ? isStudentFriendly : (
+    job.jobType === 'Part-time' || 
+    job.experienceLevel === 'Entry' || 
+    (job.hoursPerWeek && job.hoursPerWeek <= 20) ||
+    (job.benefits && job.benefits.some(benefit => 
+      benefit.toLowerCase().includes('flexible') || 
+      benefit.toLowerCase().includes('schedule') ||
+      benefit.toLowerCase().includes('campus') ||
+      benefit.toLowerCase().includes('student')
+    ))
+  );
+
+  // Extract student-friendly benefits
+  const studentBenefits = job.benefits ? job.benefits.filter(benefit => 
+    benefit.toLowerCase().includes('flexible') || 
+    benefit.toLowerCase().includes('schedule') ||
+    benefit.toLowerCase().includes('campus') ||
+    benefit.toLowerCase().includes('student')
+  ) : [];
+
   return (
     <div className="space-y-6">
+      {/* Student-friendly badge */}
+      {studentFriendly && (
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-md mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-700">
+                <span className="font-medium">Perfect for students!</span> This job offers flexible hours and is compatible with your class schedule.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Job highlights */}
       <div className="bg-gray-50 p-4 rounded-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -40,7 +79,9 @@ const JobDetails = ({ job }) => {
               <svg className="w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
               </svg>
-              <span className="text-gray-700">{job.jobType}</span>
+              <span className={`${job.jobType === 'Part-time' ? 'text-green-700 font-medium' : 'text-gray-700'}`}>
+                {job.jobType}
+              </span>
             </div>
           )}
           {job.experienceLevel && (
@@ -53,6 +94,24 @@ const JobDetails = ({ job }) => {
           )}
         </div>
       </div>
+
+      {/* Hours per week - Highlighted for students */}
+      {job.hoursPerWeek && (
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2 text-blue-800">Hours Per Week</h3>
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span className="text-blue-700 font-medium">{job.hoursPerWeek} hours/week</span>
+          </div>
+          <p className="text-sm text-blue-600 mt-2">
+            {job.hoursPerWeek <= 20 
+              ? "This part-time position offers hours that can easily fit around your class schedule."
+              : "Consider how these hours will fit with your academic commitments."}
+          </p>
+        </div>
+      )}
 
       {/* Job description */}
       <div>
@@ -70,15 +129,51 @@ const JobDetails = ({ job }) => {
         </ul>
       </div>
 
-      {/* Benefits */}
+      {/* Student-specific benefits section */}
+      {studentBenefits.length > 0 && (
+        <div className="bg-green-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2 text-green-800">Student Benefits</h3>
+          <ul className="list-disc list-inside text-green-700 space-y-1">
+            {studentBenefits.map((benefit, index) => (
+              <li key={index}>{benefit}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* All benefits */}
       {job.benefits && job.benefits.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold mb-2 text-gray-900">Benefits</h3>
+          <h3 className="text-lg font-semibold mb-2 text-gray-900">All Benefits</h3>
           <ul className="list-disc list-inside text-gray-700 space-y-1">
             {job.benefits.map((benefit, index) => (
               <li key={index}>{benefit}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Schedule information */}
+      {(job.startDate || job.endDate) && (
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2 text-yellow-800">Schedule Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {job.startDate && (
+              <div>
+                <h4 className="text-sm font-medium text-yellow-700">Start Date</h4>
+                <p className="text-gray-700">{new Date(job.startDate).toLocaleDateString()}</p>
+              </div>
+            )}
+            {job.endDate && (
+              <div>
+                <h4 className="text-sm font-medium text-yellow-700">End Date</h4>
+                <p className="text-gray-700">{new Date(job.endDate).toLocaleDateString()}</p>
+                <p className="text-xs text-yellow-600 mt-1">
+                  Perfect for semester planning - this position ends before the next semester starts!
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
