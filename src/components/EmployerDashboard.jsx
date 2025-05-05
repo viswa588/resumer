@@ -11,9 +11,16 @@ import {
   FileText, 
   CheckCircle, 
   XCircle,
-  LogOut
+  LogOut,
+  X,
+  Eye,
+  Calendar,
+  MapPin,
+  DollarSign
 } from "lucide-react";
 import { initializeSampleData } from "../data/sampleData";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Badge } from "./ui/badge";
 
 export default function EmployerDashboard() {
   const navigate = useNavigate();
@@ -27,6 +34,16 @@ export default function EmployerDashboard() {
   
   const [recentJobs, setRecentJobs] = useState([]);
   const [recentApplicants, setRecentApplicants] = useState([]);
+  
+  // State for modal visibility
+  const [activeModal, setActiveModal] = useState(null); // 'postedJobs', 'activeJobs', 'totalApplicants', 'pendingApprovals', 'pendingTimesheets'
+  
+  // State for modal data
+  const [allJobs, setAllJobs] = useState([]);
+  const [activeJobsList, setActiveJobsList] = useState([]);
+  const [allApplicants, setAllApplicants] = useState([]);
+  const [pendingApprovalsList, setPendingApprovalsList] = useState([]);
+  const [pendingTimesheetsList, setPendingTimesheetsList] = useState([]);
 
   useEffect(() => {
     // Initialize sample data if it doesn't exist
@@ -36,19 +53,19 @@ export default function EmployerDashboard() {
     const employerEmail = localStorage.getItem('userEmail') || 'employer@example.com';
     
     // Get posted jobs from localStorage or use empty array if none exist
-    const allJobs = JSON.parse(localStorage.getItem('employerJobs') || '[]');
-    const employerJobs = allJobs.filter(job => job.employerEmail === employerEmail);
+    const allJobsData = JSON.parse(localStorage.getItem('employerJobs') || '[]');
+    const employerJobs = allJobsData.filter(job => job.employerEmail === employerEmail);
     
     // Get job applicants from localStorage or use empty array if none exist
-    const allApplicants = JSON.parse(localStorage.getItem('jobApplicants') || '[]');
-    const jobApplicants = allApplicants.filter(applicant => {
+    const allApplicantsData = JSON.parse(localStorage.getItem('jobApplicants') || '[]');
+    const jobApplicants = allApplicantsData.filter(applicant => {
       const job = employerJobs.find(job => job.id === applicant.jobId);
       return job !== undefined;
     });
 
     // Get pending timesheets
-    const allTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    const pendingTimesheets = allTimesheets.filter(timesheet => 
+    const allTimesheetsData = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    const pendingTimesheets = allTimesheetsData.filter(timesheet => 
       timesheet.status === 'Pending' && 
       employerJobs.some(job => job.id === timesheet.jobId)
     );
@@ -67,6 +84,13 @@ export default function EmployerDashboard() {
 
     // Set recent applicants (up to 5)
     setRecentApplicants(jobApplicants.slice(0, 5));
+    
+    // Set data for modals
+    setAllJobs(employerJobs);
+    setActiveJobsList(employerJobs.filter(job => job.status === 'active'));
+    setAllApplicants(jobApplicants);
+    setPendingApprovalsList(jobApplicants.filter(app => app.status === 'pending'));
+    setPendingTimesheetsList(pendingTimesheets);
   }, []);
 
   const handlePostNewJob = () => {
@@ -78,7 +102,7 @@ export default function EmployerDashboard() {
   };
 
   const handleViewApplicants = () => {
-    navigate('/employer-applicants');
+    navigate('/employer-job-management');
   };
 
   const handleTimesheetApproval = () => {
@@ -92,6 +116,22 @@ export default function EmployerDashboard() {
     
     // Redirect to login page
     navigate('/login');
+  };
+  
+  // Modal handlers
+  const openModal = (modalType) => {
+    setActiveModal(modalType);
+  };
+  
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+  
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
 
   return (
@@ -122,7 +162,10 @@ export default function EmployerDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <Card>
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50"
+            onClick={() => openModal('postedJobs')}
+          >
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <Briefcase className="h-8 w-8 text-blue-500 mb-2" />
               <p className="text-sm text-gray-500">Posted Jobs</p>
@@ -130,7 +173,10 @@ export default function EmployerDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-green-50"
+            onClick={() => openModal('activeJobs')}
+          >
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <Briefcase className="h-8 w-8 text-green-500 mb-2" />
               <p className="text-sm text-gray-500">Active Jobs</p>
@@ -138,7 +184,10 @@ export default function EmployerDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-purple-50"
+            onClick={() => openModal('totalApplicants')}
+          >
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <Users className="h-8 w-8 text-purple-500 mb-2" />
               <p className="text-sm text-gray-500">Total Applicants</p>
@@ -146,7 +195,10 @@ export default function EmployerDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-yellow-50"
+            onClick={() => openModal('pendingApprovals')}
+          >
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <CheckCircle className="h-8 w-8 text-yellow-500 mb-2" />
               <p className="text-sm text-gray-500">Pending Approvals</p>
@@ -154,7 +206,10 @@ export default function EmployerDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-red-50"
+            onClick={() => openModal('pendingTimesheets')}
+          >
             <CardContent className="p-4 flex flex-col items-center justify-center">
               <Clock className="h-8 w-8 text-red-500 mb-2" />
               <p className="text-sm text-gray-500">Pending Timesheets</p>
@@ -287,6 +342,327 @@ export default function EmployerDashboard() {
             </CardContent>
           </Card>
         </div>
+        {/* Modal for Posted Jobs */}
+        {activeModal === 'postedJobs' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Posted Jobs</CardTitle>
+                    <CardDescription>All jobs you have posted</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={closeModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {allJobs.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Job Title</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Posted Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Applicants</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allJobs.map((job) => (
+                          <TableRow key={job.id}>
+                            <TableCell className="font-medium">{job.title}</TableCell>
+                            <TableCell>{job.location}</TableCell>
+                            <TableCell>{formatDate(job.postedDate)}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                className={
+                                  job.status === 'active' ? 'bg-green-100 text-green-800' :
+                                  job.status === 'closed' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }
+                              >
+                                {job.status === 'active' ? 'Active' : 
+                                 job.status === 'closed' ? 'Closed' : 
+                                 'Draft'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {allApplicants.filter(app => app.jobId === job.id).length}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p>No jobs posted yet</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-2"
+                        onClick={() => {
+                          closeModal();
+                          handlePostNewJob();
+                        }}
+                      >
+                        Post Your First Job
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal for Active Jobs */}
+        {activeModal === 'activeJobs' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Active Jobs</CardTitle>
+                    <CardDescription>Currently active job postings</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={closeModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {activeJobsList.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Job Title</TableHead>
+                          <TableHead>Location</TableHead>
+                          <TableHead>Posted Date</TableHead>
+                          <TableHead>Deadline</TableHead>
+                          <TableHead>Applicants</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {activeJobsList.map((job) => (
+                          <TableRow key={job.id}>
+                            <TableCell className="font-medium">{job.title}</TableCell>
+                            <TableCell>{job.location}</TableCell>
+                            <TableCell>{formatDate(job.postedDate)}</TableCell>
+                            <TableCell>{formatDate(job.applicationDeadline)}</TableCell>
+                            <TableCell>
+                              {allApplicants.filter(app => app.jobId === job.id).length}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p>No active jobs found</p>
+                      <Button 
+                        variant="outline" 
+                        className="mt-2"
+                        onClick={() => {
+                          closeModal();
+                          handlePostNewJob();
+                        }}
+                      >
+                        Post a New Job
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal for Total Applicants */}
+        {activeModal === 'totalApplicants' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>All Applicants</CardTitle>
+                    <CardDescription>All applicants for your job postings</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={closeModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {allApplicants.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Applied For</TableHead>
+                          <TableHead>Applied Date</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allApplicants.map((applicant) => (
+                          <TableRow key={applicant.id}>
+                            <TableCell className="font-medium">{applicant.name}</TableCell>
+                            <TableCell>{applicant.email}</TableCell>
+                            <TableCell>{applicant.jobTitle}</TableCell>
+                            <TableCell>{formatDate(applicant.appliedDate)}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                className={
+                                  applicant.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                  applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }
+                              >
+                                {applicant.status === 'approved' ? 'Approved' : 
+                                 applicant.status === 'rejected' ? 'Rejected' : 
+                                 'Pending'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p>No applicants yet</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal for Pending Approvals */}
+        {activeModal === 'pendingApprovals' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Pending Approvals</CardTitle>
+                    <CardDescription>Applicants waiting for your approval</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={closeModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {pendingApprovalsList.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Applied For</TableHead>
+                          <TableHead>Applied Date</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingApprovalsList.map((applicant) => (
+                          <TableRow key={applicant.id}>
+                            <TableCell className="font-medium">{applicant.name}</TableCell>
+                            <TableCell>{applicant.email}</TableCell>
+                            <TableCell>{applicant.jobTitle}</TableCell>
+                            <TableCell>{formatDate(applicant.appliedDate)}</TableCell>
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  closeModal();
+                                  navigate(`/employer-job-applicants/${applicant.jobId}`);
+                                }}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                Review
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <CheckCircle className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p>No pending approvals</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+        
+        {/* Modal for Pending Timesheets */}
+        {activeModal === 'pendingTimesheets' && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Pending Timesheets</CardTitle>
+                    <CardDescription>Timesheets waiting for your approval</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={closeModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {pendingTimesheetsList.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Week Ending</TableHead>
+                          <TableHead>Total Hours</TableHead>
+                          <TableHead>Department</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingTimesheetsList.map((timesheet) => (
+                          <TableRow key={timesheet.id}>
+                            <TableCell className="font-medium">{timesheet.studentName}</TableCell>
+                            <TableCell>{timesheet.weekEnding}</TableCell>
+                            <TableCell>{timesheet.totalHours}</TableCell>
+                            <TableCell>{timesheet.department}</TableCell>
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  closeModal();
+                                  handleTimesheetApproval();
+                                }}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                Review
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-gray-500">
+                      <Clock className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <p>No pending timesheets</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

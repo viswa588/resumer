@@ -28,7 +28,8 @@ import { Badge } from "./ui/badge";
 import { Search } from "lucide-react";
 import PaymentProcessing from "./PaymentProcessing";
 import { initializeSampleData } from "../data/sampleData";
-import { getFormattedTimesheetsData } from "../lib/timesheetUtils";
+import { getFormattedTimesheets, updateTimesheetInLocalStorage } from "../lib/timesheetUtils";
+import { useNotification } from "../context/NotificationContext";
 
 const TimeSheetApproval = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,13 +38,16 @@ const TimeSheetApproval = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [selectedTimesheet, setSelectedTimesheet] = useState(null);
   const [timesheets, setTimesheets] = useState([]);
+  
+  // Get notification context
+  const { addTimesheetNotification } = useNotification();
 
   useEffect(() => {
     // Initialize sample data if it doesn't exist
     initializeSampleData();
     
     // Get formatted timesheets using the utility function
-    const formattedTimesheets = getFormattedTimesheetsData();
+    const formattedTimesheets = getFormattedTimesheets();
     
     setTimesheets(formattedTimesheets);
   }, []);
@@ -80,16 +84,56 @@ const TimeSheetApproval = () => {
 
   const handleProcessPayment = (paymentDetails) => {
     console.log("Processing payment:", paymentDetails);
+    
+    // Find the original timesheet in the stored timesheets
+    const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    const originalTimesheet = storedTimesheets.find(t => t.id === selectedTimesheet.id);
+    
+    if (originalTimesheet) {
+      // Update the status
+      originalTimesheet.status = "Approved";
+      
+      // Update in localStorage
+      localStorage.setItem('timesheets', JSON.stringify(storedTimesheets));
+      
+      // Also update the individual timesheet in localStorage
+      updateTimesheetInLocalStorage(originalTimesheet);
+      
+      // Add notification for timesheet approval
+      addTimesheetNotification('approved', originalTimesheet.date, originalTimesheet.id);
+    }
+    
+    // Update the UI
     setTimesheets(
       timesheets.map((t) =>
         t.id === selectedTimesheet.id ? { ...t, status: "Approved" } : t
       )
     );
+    
     setShowPayment(false);
     setSelectedTimesheet(null);
   };
 
   const handleReject = (id) => {
+    // Find the original timesheet in the stored timesheets
+    const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    const originalTimesheet = storedTimesheets.find(t => t.id === id);
+    
+    if (originalTimesheet) {
+      // Update the status
+      originalTimesheet.status = "Rejected";
+      
+      // Update in localStorage
+      localStorage.setItem('timesheets', JSON.stringify(storedTimesheets));
+      
+      // Also update the individual timesheet in localStorage
+      updateTimesheetInLocalStorage(originalTimesheet);
+      
+      // Add notification for timesheet rejection
+      addTimesheetNotification('rejected', originalTimesheet.date, originalTimesheet.id);
+    }
+    
+    // Update the UI
     setTimesheets(
       timesheets.map((t) =>
         t.id === id ? { ...t, status: "Rejected" } : t
@@ -101,16 +145,14 @@ const TimeSheetApproval = () => {
     console.log("View details:", id);
   };
 
-  // const filteredTimesheets = timesheets.filter((t) => {
-  //   const matchesSearch =
-  //     t.studentName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-  //     t.studentId?.toLowerCase().includes(searchTerm?.toLowerCase());
-  //   const matchesStatus =
-  //     statusFilter === "all" || t.status === statusFilter;
-  //   return matchesSearch && matchesStatus;
-  // });
-
-  const filteredTimesheets = timesheets;
+  const filteredTimesheets = timesheets.filter((t) => {
+    const matchesSearch =
+      t.studentName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+      t.studentId?.toLowerCase().includes(searchTerm?.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || t.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">

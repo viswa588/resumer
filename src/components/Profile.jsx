@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import HistoryModal from './HistoryModal';
 import JobCard from './JobCard';
 import JobModal from './JobModal';
 import VideoRecordModal from './VideoRecordModal';
+import NotificationDropdown from './NotificationDropdown';
+import NotificationBadge from './NotificationBadge';
+import { useNotification } from '../context/NotificationContext';
 import logo from '../assets/icon.png';
 import { jobs } from '../data/jobs';
+import { calculateHours } from '../lib/hourUtils';
 
 
 const Profile = () => {
@@ -21,6 +25,19 @@ const Profile = () => {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [acceptedJobs, setAcceptedJobs] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
+  const [resume, setResume] = useState(null);
+  const [resumeFileName, setResumeFileName] = useState('');
+  const [showAlertDropdown, setShowAlertDropdown] = useState(false);
+  const [showEmailDropdown, setShowEmailDropdown] = useState(false);
+  
+  // Get notification context
+  const { 
+    getUnreadAlertCount, 
+    getUnreadEmailCount, 
+    addJobApplicationNotification,
+    addJobOfferNotification,
+    addTimesheetNotification
+  } = useNotification();
 
   useEffect(() => {
     // Load accepted jobs from localStorage
@@ -40,6 +57,14 @@ const Profile = () => {
     // Load timesheets from localStorage
     const timesheetsData = JSON.parse(localStorage.getItem('timesheets') || '[]');
     setTimesheets(timesheetsData);
+    
+    // Load resume from localStorage if it exists
+    const savedResume = localStorage.getItem('userResume');
+    const savedResumeFileName = localStorage.getItem('userResumeFileName');
+    if (savedResume) {
+      setResume(savedResume);
+      setResumeFileName(savedResumeFileName || 'resume.pdf');
+    }
   }, []);
 
   const handleVideoModalOpen = () => {
@@ -55,6 +80,8 @@ const Profile = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('appliedJobs');
+    localStorage.removeItem('userResume');
+    localStorage.removeItem('userResumeFileName');
     
     // Redirect to login page
     navigate('/login');
@@ -122,6 +149,45 @@ const Profile = () => {
     }
   };
 
+  const handleResumeUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Check if file is a PDF
+      if (file.type !== 'application/pdf') {
+        alert('Please upload a PDF file');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const resumeData = reader.result;
+        setResume(resumeData);
+        setResumeFileName(file.name);
+        
+        // Save to localStorage
+        localStorage.setItem('userResume', resumeData);
+        localStorage.setItem('userResumeFileName', file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleResumeDelete = () => {
+    setResume(null);
+    setResumeFileName('');
+    localStorage.removeItem('userResume');
+    localStorage.removeItem('userResumeFileName');
+  };
+
+  const handleResumeView = () => {
+    if (resume) {
+      const newWindow = window.open();
+      newWindow.document.write(`
+        <iframe src="${resume}" width="100%" height="100%" style="border: none;"></iframe>
+      `);
+    }
+  };
+
   const handleAboutUpdate = () => {
     // Add API call to update about section
     setIsEditing(false);
@@ -133,7 +199,15 @@ const Profile = () => {
 
   const handleJobApply = (job) => {
     if (!appliedJobs.find(j => j.id === job.id)) {
-      setAppliedJobs([...appliedJobs, job]);
+      const updatedAppliedJobs = [...appliedJobs, job];
+      setAppliedJobs(updatedAppliedJobs);
+      
+      // Save to localStorage
+      const appliedJobIds = updatedAppliedJobs.map(j => j.id);
+      localStorage.setItem('appliedJobs', JSON.stringify(appliedJobIds));
+      
+      // Add notification with jobId
+      addJobApplicationNotification(job.title, job.company, job.id);
     }
   };
 
@@ -151,8 +225,43 @@ const Profile = () => {
           <img src={logo} alt="Profile Logo" className="h-15 w-12" />
           <div className="flex space-x-3 md:space-x-4">
             <FaHome className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
-            <FaBell className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
-            <FaEnvelope className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
+            
+            {/* Alert Bell with Badge */}
+            <div className="relative">
+              <FaBell 
+                className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" 
+                onClick={() => {
+                  setShowAlertDropdown(!showAlertDropdown);
+                  setShowEmailDropdown(false);
+                }}
+              />
+              <NotificationBadge count={getUnreadAlertCount()} />
+              {showAlertDropdown && (
+                <NotificationDropdown 
+                  type="alerts" 
+                  onClose={() => setShowAlertDropdown(false)} 
+                />
+              )}
+            </div>
+            
+            {/* Email with Badge */}
+            <div className="relative">
+              <FaEnvelope 
+                className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" 
+                onClick={() => {
+                  setShowEmailDropdown(!showEmailDropdown);
+                  setShowAlertDropdown(false);
+                }}
+              />
+              <NotificationBadge count={getUnreadEmailCount()} />
+              {showEmailDropdown && (
+                <NotificationDropdown 
+                  type="emails" 
+                  onClose={() => setShowEmailDropdown(false)} 
+                />
+              )}
+            </div>
+            
             <FaSignOutAlt 
               className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-red-500" 
               onClick={handleLogout}
@@ -186,7 +295,8 @@ const Profile = () => {
           </div>
 
            {/* About Section */}
-           <div className="w-full md:w-8/12 bg-white rounded-lg shadow-md p-6">
+           <div className="w-full md:w-8/12 bg-white rounded-lg shadow-md p-6" 
+             >
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-semibold">About</h3>
               <button
@@ -212,10 +322,11 @@ const Profile = () => {
             
             {/* Accepted Jobs Section */}
             {acceptedJobs.length > 0 && (
-              <div className="mt-6 border-t pt-4">
+              <div className="mt-6 border-t pt-4" >
                 <h3 className="text-lg font-semibold mb-3">Your Current Position</h3>
+                <div style={{maxHeight: '250px', overflowY: 'auto'}}>
                 {acceptedJobs.map(job => (
-                  <div key={job.id} className="bg-blue-50 rounded-lg p-4 mb-3">
+                  <div key={job.id} className="bg-blue-50 rounded-lg p-4 mb-3" >
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold text-gray-900">{job.title}</h4>
@@ -253,7 +364,7 @@ const Profile = () => {
                               <div key={timesheet.id} className="bg-white p-2 rounded-md text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">
-                                    {new Date(timesheet.date).toLocaleDateString()}
+                                    {timesheet.date || new Date().toLocaleDateString()}
                                   </span>
                                   <span className="text-blue-600 cursor-pointer" onClick={() => navigate(`/timesheet/view/${timesheet.id}`)}>
                                     View Details
@@ -261,10 +372,9 @@ const Profile = () => {
                                 </div>
                                 <div className="mt-1">
                                   <span className="text-gray-500">
-                                    {timesheet.entries.reduce((total, entry) => {
-                                      const entryTotal = entry.hours.reduce((sum, h) => sum + (parseFloat(h) || 0), 0);
-                                      return total + entryTotal;
-                                    }, 0)} hours total
+                                    {timesheet?.entries?.reduce((total, entry) => {
+                                      return total + calculateHours(entry?.hours);
+                                    }, 0).toFixed(1)} hours total
                                   </span>
                                 </div>
                               </div>
@@ -284,6 +394,7 @@ const Profile = () => {
                     )}
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </div>
@@ -317,6 +428,48 @@ const Profile = () => {
               <div className="text-center mt-4">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-800">{user.username}</h2>
                 <p className="text-sm md:text-base text-gray-600">{user.email}</p>
+              </div>
+              
+              {/* Resume Upload Section */}
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-md font-semibold mb-3">Resume</h3>
+                {resume ? (
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center justify-center bg-gray-100 p-3 rounded-lg w-full mb-2">
+                      <FaFilePdf className="text-red-500 text-xl mr-2" />
+                      <span className="text-sm text-gray-700 truncate max-w-[150px]">{resumeFileName}</span>
+                    </div>
+                    <div className="flex space-x-2 mt-2">
+                      <button 
+                        onClick={handleResumeView}
+                        className="bg-blue-500 text-white px-3 py-1 rounded-md text-sm flex items-center"
+                      >
+                        <FaFileAlt className="mr-1" /> View
+                      </button>
+                      <button 
+                        onClick={handleResumeDelete}
+                        className="bg-red-500 text-white px-3 py-1 rounded-md text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <label htmlFor="resume-upload" className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-lg flex flex-col items-center w-full">
+                      <FaFileUpload className="text-3xl mb-2" />
+                      <span className="text-sm font-medium">Upload Resume (PDF)</span>
+                      <input
+                        type="file"
+                        id="resume-upload"
+                        className="hidden"
+                        accept="application/pdf"
+                        onChange={handleResumeUpload}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500 mt-2">Max file size: 5MB</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

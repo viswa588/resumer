@@ -25,6 +25,9 @@ const localStorageMock = (() => {
     setItem: jest.fn((key, value) => {
       store[key] = value.toString();
     }),
+    removeItem: jest.fn((key) => {
+      delete store[key];
+    }),
     clear: jest.fn(() => {
       store = {};
     })
@@ -35,7 +38,14 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 });
 
+// Mock window.open
+window.open = jest.fn();
+
 describe('Profile Component', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('does not show roles and responsibilities link when no job is accepted', () => {
     // Setup localStorage with no accepted jobs
     localStorage.getItem.mockReturnValue('{}');
@@ -108,5 +118,184 @@ describe('Profile Component', () => {
     expect(localStorage.removeItem).toHaveBeenCalledWith('userRole');
     expect(localStorage.removeItem).toHaveBeenCalledWith('userEmail');
     expect(localStorage.removeItem).toHaveBeenCalledWith('appliedJobs');
+    expect(localStorage.removeItem).toHaveBeenCalledWith('userResume');
+    expect(localStorage.removeItem).toHaveBeenCalledWith('userResumeFileName');
+  });
+
+  test('renders resume upload section', () => {
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+    
+    // Check that the resume section is rendered
+    expect(screen.getByText('Resume')).toBeInTheDocument();
+    expect(screen.getByText('Upload Resume (PDF)')).toBeInTheDocument();
+  });
+
+  test('shows resume when one is stored in localStorage', () => {
+    // Setup localStorage with a resume
+    localStorage.getItem.mockImplementation((key) => {
+      if (key === 'userResume') {
+        return 'data:application/pdf;base64,test-pdf-data';
+      }
+      if (key === 'userResumeFileName') {
+        return 'test-resume.pdf';
+      }
+      return null;
+    });
+    
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+    
+    // Check that the resume is displayed
+    expect(screen.getByText('test-resume.pdf')).toBeInTheDocument();
+    expect(screen.getByText('View')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+  });
+
+  test('clicking delete button removes the resume', () => {
+    // Setup localStorage with a resume
+    localStorage.getItem.mockImplementation((key) => {
+      if (key === 'userResume') {
+        return 'data:application/pdf;base64,test-pdf-data';
+      }
+      if (key === 'userResumeFileName') {
+        return 'test-resume.pdf';
+      }
+      return null;
+    });
+    
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+    
+    // Find and click the delete button
+    const deleteButton = screen.getByText('Delete');
+    fireEvent.click(deleteButton);
+    
+    // Check that localStorage.removeItem was called
+    expect(localStorage.removeItem).toHaveBeenCalledWith('userResume');
+    expect(localStorage.removeItem).toHaveBeenCalledWith('userResumeFileName');
+  });
+
+  test('clicking view button opens the resume in a new window', () => {
+    // Setup localStorage with a resume
+    localStorage.getItem.mockImplementation((key) => {
+      if (key === 'userResume') {
+        return 'data:application/pdf;base64,test-pdf-data';
+      }
+      if (key === 'userResumeFileName') {
+        return 'test-resume.pdf';
+      }
+      return null;
+    });
+    
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+    
+    // Find and click the view button
+    const viewButton = screen.getByText('View');
+    fireEvent.click(viewButton);
+    
+    // Check that window.open was called
+    expect(window.open).toHaveBeenCalled();
+  });
+
+  test('correctly calculates total hours from timesheet entries with mixed values - array format', () => {
+    // Setup localStorage with a job and timesheet that has mixed values (numbers, empty strings, null, undefined)
+    localStorage.getItem.mockImplementation((key) => {
+      if (key === 'jobOfferStatuses') {
+        return JSON.stringify({ '1': 'accepted' });
+      }
+      if (key === 'timesheets') {
+        return JSON.stringify([
+          {
+            id: 1,
+            jobId: 1,
+            date: new Date().toISOString(),
+            entries: [
+              {
+                project: 'Test Project',
+                task: 'Test Task',
+                hours: ['2', '3', '', null, undefined, 'invalid', '4.5']
+              },
+              {
+                project: 'Test Project 2',
+                task: 'Test Task 2',
+                hours: ['1.5', '2.5', '3', '', '0', null, undefined]
+              }
+            ]
+          }
+        ]);
+      }
+      return null;
+    });
+    
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+    
+    // The total should be 2 + 3 + 0 + 0 + 0 + 0 + 4.5 + 1.5 + 2.5 + 3 + 0 + 0 + 0 + 0 = 16.5
+    expect(screen.getByText('16.5 hours total')).toBeInTheDocument();
+  });
+  
+  test('correctly calculates total hours from timesheet entries with single value format', () => {
+    // Setup localStorage with a job and timesheet that has single value hours format
+    localStorage.getItem.mockImplementation((key) => {
+      if (key === 'jobOfferStatuses') {
+        return JSON.stringify({ '1': 'accepted' });
+      }
+      if (key === 'timesheets') {
+        return JSON.stringify([
+          {
+            id: 1,
+            jobId: 1,
+            date: new Date().toISOString(),
+            entries: [
+              {
+                date: '2023-12-11',
+                hours: 8,
+                task: 'Development',
+                description: 'Implemented new features'
+              },
+              {
+                date: '2023-12-12',
+                hours: 7.5,
+                task: 'Testing',
+                description: 'Unit testing'
+              },
+              {
+                date: '2023-12-13',
+                hours: '6.5',
+                task: 'Documentation',
+                description: 'API documentation'
+              }
+            ]
+          }
+        ]);
+      }
+      return null;
+    });
+    
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+    
+    // The total should be 8 + 7.5 + 6.5 = 22.0
+    expect(screen.getByText('22.0 hours total')).toBeInTheDocument();
   });
 });

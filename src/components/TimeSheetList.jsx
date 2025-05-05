@@ -12,7 +12,8 @@ import { Table, TableHeader, TableBody, TableRow, TableCell } from "./ui/table";
 import { Badge } from "./ui/badge";
 import { format } from "date-fns";
 import { jobs } from "../data/jobs";
-import { getFormattedTimesheets } from "../lib/timesheetUtils";
+import { getFormattedTimesheets, updateTimesheetInLocalStorage } from "../lib/timesheetUtils";
+import { calculateHours } from "../lib/hourUtils";
 
 const TimeSheetList = () => {
   const { id } = useParams();
@@ -43,6 +44,24 @@ const TimeSheetList = () => {
     navigate(`/timesheet/edit/${timesheetId}`);
   };
 
+  const handleView = (timesheetId) => {
+    // Find the timesheet in the list
+    const timesheet = timesheets.find(ts => ts.id === timesheetId);
+    
+    if (timesheet) {
+      // Find the original timesheet in localStorage
+      const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
+      const originalTimesheet = storedTimesheets.find(ts => ts.id === timesheetId);
+      
+      if (originalTimesheet) {
+        // Update the individual timesheet in localStorage
+        updateTimesheetInLocalStorage(originalTimesheet);
+      }
+    }
+    
+    navigate(`/timesheet/view/${timesheetId}`);
+  };
+
   const handleGoBack = () => {
     navigate('/profile');
   };
@@ -60,8 +79,7 @@ const TimeSheetList = () => {
 
   const calculateTotalHours = (entries) => {
     return entries.reduce((total, entry) => {
-      const entryTotal = entry.hours.reduce((sum, h) => sum + (parseFloat(h) || 0), 0);
-      return total + entryTotal;
+      return total + calculateHours(entry.hours);
     }, 0);
   };
 
@@ -137,7 +155,7 @@ const TimeSheetList = () => {
                             <TableCell className="p-2 border">{totalHours.toFixed(2)}</TableCell>
                             <TableCell className="p-2 border text-center">
                               <div className="flex justify-center space-x-2">
-                                <Button variant="outline" size="sm" onClick={() => navigate(`/timesheet/view/${ts.id}`)}>
+                                <Button variant="outline" size="sm" onClick={() => handleView(ts.id)}>
                                   View
                                 </Button>
                                 <Button variant="outline" size="sm" onClick={() => handleEdit(ts.id)}>

@@ -9,6 +9,8 @@ import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { useNavigate } from "react-router-dom";
+import { loginUser, USER_TYPES } from "../services/authService";
+import { Alert, AlertDescription } from "./ui/alert";
 
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -21,9 +23,11 @@ export default function EmployerLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [userRole, setUserRole] = useState('employer');
+  const [userRole, setUserRole] = useState(USER_TYPES.EMPLOYER);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = () => { 
+  const handleLogin = async () => { 
+    // Form validation
     if(!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -37,25 +41,34 @@ export default function EmployerLogin() {
       return;
     }
 
-    // Store user role and email in localStorage
-    localStorage.setItem('userRole', userRole);
-    localStorage.setItem('userEmail', email);
+    setIsSubmitting(true);
     
-    // Perform login logic here
-    if(email === 'employer@example.com' && password === 'password123') {
-      // Redirect based on role
-      if (userRole === 'employer') {
-        navigate('/employer-dashboard');
+    try {
+      // Call login service
+      const result = await loginUser({ email, password });
+      
+      if (result.success) {
+        // Check if user type matches selected role
+        if (result.user.userType !== userRole) {
+          setError(`This account is registered as a ${result.user.userType}. Please select the correct user type.`);
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Redirect based on user type
+        if (result.user.userType === USER_TYPES.EMPLOYER) {
+          navigate('/employer-dashboard');
+        } else {
+          navigate('/home');
+        }
       } else {
-        navigate('/home');
+        setError(result.message);
       }
-    } else {
-      // For demo purposes, allow any login
-      if (userRole === 'employer') {
-        navigate('/employer-dashboard');
-      } else {
-        navigate('/home');
-      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -70,17 +83,17 @@ export default function EmployerLogin() {
           <div className="mb-4">
             <Label className="text-sm font-medium text-gray-700 mb-2 block">I am a:</Label>
             <RadioGroup 
-              defaultValue="employer" 
+              defaultValue={USER_TYPES.EMPLOYER} 
               className="flex space-x-4"
               value={userRole}
               onValueChange={setUserRole}
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="employer" id="employer" />
+                <RadioGroupItem value={USER_TYPES.EMPLOYER} id="employer" />
                 <Label htmlFor="employer">Employer</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="jobseeker" id="jobseeker" />
+                <RadioGroupItem value={USER_TYPES.JOB_SEEKER} id="jobseeker" />
                 <Label htmlFor="jobseeker">Job Seeker</Label>
               </div>
             </RadioGroup>
@@ -127,11 +140,15 @@ export default function EmployerLogin() {
         )}
 
         <div className="text-right text-sm text-gray-500 mt-2">
-          <a href="#" className="hover:underline">Forgot Password?</a>
+          <a href="/forgot-password" className="hover:underline">Forgot Password?</a>
         </div>
 
-        <Button onClick={handleLogin} className="w-full mt-4 bg-green-500 hover:bg-green-600">
-          LOG IN
+        <Button 
+          onClick={handleLogin} 
+          className="w-full mt-4 bg-green-500 hover:bg-green-600"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "LOGGING IN..." : "LOG IN"}
         </Button>
         
         <div className="flex items-center gap-2 mt-4">

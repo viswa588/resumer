@@ -1,5 +1,6 @@
 // components/PaymentProcessing.jsx
 import { useState, useEffect } from "react";
+import { calculateHours } from "../lib/hourUtils";
 import {
   Card,
   CardContent,
@@ -105,10 +106,10 @@ const PaymentProcessing = ({ timesheet, onClose, onProcessPayment }) => {
                 {timesheet.entries?.map((entry, index) => (
                   <TableRow key={index}>
                     <TableCell>{entry.date}</TableCell>
-                    <TableCell>{entry.hours}</TableCell>
+                    <TableCell>{calculateHours(entry.hours)}</TableCell>
                     <TableCell>${HOURLY_RATE.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      ${(entry.hours * HOURLY_RATE).toFixed(2)}
+                      ${(calculateHours(entry.hours) * HOURLY_RATE).toFixed(2)}
                     </TableCell>
                   </TableRow>
                 ))}

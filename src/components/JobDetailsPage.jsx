@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import JobDetails from './JobDetails';
 import JobOfferActions from './JobOfferActions';
 import { jobs } from '../data/jobs';
+import { useNotification } from '../context/NotificationContext';
 
 const JobDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addJobApplicationNotification, addJobOfferNotification } = useNotification();
   const [job, setJob] = useState(null);
   const [isApplied, setIsApplied] = useState(false);
   const [offerStatus, setOfferStatus] = useState(null);
@@ -44,6 +46,9 @@ const JobDetailsPage = () => {
       appliedJobs.push(job.id);
       localStorage.setItem('appliedJobs', JSON.stringify(appliedJobs));
       setIsApplied(true);
+      
+      // Add notification for job application
+      addJobApplicationNotification(job.title, job.company);
     }
   };
 
@@ -54,6 +59,9 @@ const JobDetailsPage = () => {
     const jobOfferStatuses = JSON.parse(localStorage.getItem('jobOfferStatuses') || '{}');
     jobOfferStatuses[job.id] = 'accepted';
     localStorage.setItem('jobOfferStatuses', JSON.stringify(jobOfferStatuses));
+    
+    // Add notification for job offer acceptance
+    addJobOfferNotification(job.title, job.company);
     
     // Navigate to welcome page
     navigate(`/welcome-job/${job.id}`);

@@ -22,12 +22,15 @@ import {
 import { Separator } from "./ui/separator";
 import { format } from "date-fns";
 import { jobs } from "../data/jobs";
+import { updateTimesheetInLocalStorage } from "../lib/timesheetUtils";
+import { useNotification } from "../context/NotificationContext";
 
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const TimeSheetEntry = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addTimesheetNotification } = useNotification();
   const [currentJob, setCurrentJob] = useState(null);
   const [entries, setEntries] = useState([
     {
@@ -99,25 +102,46 @@ const TimeSheetEntry = () => {
 
   const calculateTotal = (dayIndex) => {
     return entries.reduce((sum, entry) => {
-      const val = parseFloat(entry.hours[dayIndex]) || 0;
-      return sum + val;
+      const val = parseFloat(entry.hours[dayIndex]);
+      return sum + (isNaN(val) ? 0 : val);
     }, 0);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Calculate total hours
+    const totalHours = entries.reduce((sum, entry) => {
+      return sum + entry.hours.reduce((hourSum, hour) => {
+        const hourValue = parseFloat(hour);
+        return hourSum + (isNaN(hourValue) ? 0 : hourValue);
+      }, 0);
+    }, 0);
+    
     // Save timesheet entries to localStorage
     const timesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
     const newTimesheet = {
       id: Date.now(),
       jobId: currentJob ? currentJob.id : null,
+      userId: "user123", // This would normally come from authentication
+      userName: "John Doe", // This would normally come from authentication
+      jobTitle: currentJob ? currentJob.title : "General",
+      weekEnding: new Date().toISOString().split('T')[0], // Use current date as week ending
+      totalHours: totalHours,
+      status: "Pending",
+      submittedDate: new Date().toISOString(),
       date: new Date().toISOString(),
       entries: entries,
     };
     
     timesheets.push(newTimesheet);
     localStorage.setItem('timesheets', JSON.stringify(timesheets));
+    
+    // Also update the individual timesheet in localStorage using the new function
+    updateTimesheetInLocalStorage(newTimesheet);
+    
+    // Add notification for timesheet submission
+    addTimesheetNotification('submitted', newTimesheet.date, newTimesheet.id);
     
     // Navigate back to profile or timesheet list
     if (currentJob) {

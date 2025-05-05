@@ -320,11 +320,11 @@ export const sampleTimesheets = [
     status: "Under Review",
     submittedDate: "2024-01-08T11:30:00Z",
     entries: [
-      { date: "2024-01-01", hours: 8, task: "Design", description: "User personas" },
-      { date: "2024-01-02", hours: 8, task: "Design", description: "Information architecture" },
-      { date: "2024-01-03", hours: 8, task: "Research", description: "Competitor analysis" },
-      { date: "2024-01-04", hours: 7, task: "Design", description: "Visual design" },
-      { date: "2024-01-05", hours: 8, task: "Meeting", description: "Design critique" }
+      { date: "2025-01-01", hours: 8, task: "Design", description: "User personas" },
+      { date: "2025-01-02", hours: 8, task: "Design", description: "Information architecture" },
+      { date: "2025-01-03", hours: 8, task: "Research", description: "Competitor analysis" },
+      { date: "2025-01-04", hours: 7, task: "Design", description: "Visual design" },
+      { date: "2025-01-05", hours: 8, task: "Meeting", description: "Design critique" }
     ]
   }
 ];

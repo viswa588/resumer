@@ -1,4 +1,4 @@
-import { getFormattedTimesheets } from '../timesheetUtils';
+import { getFormattedTimesheets, updateTimesheetInLocalStorage } from '../timesheetUtils';
 import { sampleTimesheets } from '../../data/sampleData';
 
 // Mock localStorage
@@ -26,6 +26,7 @@ describe('timesheetUtils', () => {
   beforeEach(() => {
     // Clear localStorage mock
     localStorageMock.clear();
+    jest.clearAllMocks();
   });
 
   test('getFormattedTimesheets returns empty array when localStorage is empty', () => {
@@ -65,5 +66,34 @@ describe('timesheetUtils', () => {
         submittedDate: originalTs.submittedDate
       });
     });
+  });
+
+  test('updateTimesheetInLocalStorage formats and stores timesheet correctly', () => {
+    // Arrange
+    const mockTimesheet = {
+      id: 123,
+      userName: 'Test User',
+      userId: 'user123',
+      weekEnding: '2023-12-31',
+      totalHours: 40,
+      status: 'Pending',
+      jobTitle: 'Frontend Developer',
+      submittedDate: '2023-12-25T10:30:00Z'
+    };
+
+    // Act
+    updateTimesheetInLocalStorage(mockTimesheet);
+    
+    // Assert
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('timesheet', JSON.stringify({
+      id: mockTimesheet.id,
+      studentName: mockTimesheet.userName,
+      studentId: mockTimesheet.userId,
+      weekEnding: mockTimesheet.weekEnding,
+      totalHours: mockTimesheet.totalHours,
+      status: mockTimesheet.status,
+      department: mockTimesheet.jobTitle,
+      submittedDate: mockTimesheet.submittedDate
+    }));
   });
 });

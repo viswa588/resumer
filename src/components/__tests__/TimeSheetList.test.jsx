@@ -13,7 +13,8 @@ jest.mock('react-router-dom', () => ({
 
 // Mock the timesheetUtils module
 jest.mock('../../lib/timesheetUtils', () => ({
-  getFormattedTimesheets: jest.fn()
+  getFormattedTimesheets: jest.fn(),
+  updateTimesheetInLocalStorage: jest.fn()
 }));
 
 describe('TimeSheetList', () => {
@@ -54,5 +55,89 @@ describe('TimeSheetList', () => {
     
     // Check that the utility function was called
     expect(timesheetUtils.getFormattedTimesheets).toHaveBeenCalled();
+  });
+  
+  test('correctly calculates total hours with mixed values', () => {
+    // Create a timesheet with mixed hour values
+    const timesheetWithMixedValues = [{
+      id: 999,
+      studentName: 'Test Student',
+      studentId: 'test123',
+      weekEnding: '2023-01-07',
+      totalHours: 0, // This will be recalculated by the component
+      status: 'Pending',
+      department: 'Test Department',
+      submittedDate: '2023-01-01',
+      jobId: 1,
+      entries: [
+        {
+          project: 'Test Project',
+          task: 'Test Task',
+          hours: ['2.5', '3', '', null, undefined, 'invalid', '4.5']
+        },
+        {
+          project: 'Test Project 2',
+          task: 'Test Task 2',
+          hours: ['1.5', '2.5', '3', '', '0', null, undefined]
+        }
+      ]
+    }];
+    
+    timesheetUtils.getFormattedTimesheets.mockReturnValue(timesheetWithMixedValues);
+    
+    render(
+      <BrowserRouter>
+        <TimeSheetList />
+      </BrowserRouter>
+    );
+    
+    // The total should be 2.5 + 3 + 0 + 0 + 0 + 0 + 4.5 + 1.5 + 2.5 + 3 + 0 + 0 + 0 + 0 = 17.0
+    expect(screen.getByText('17.00')).toBeInTheDocument();
+  });
+  
+  test('correctly calculates total hours with single value format', () => {
+    // Create a timesheet with single value hours
+    const timesheetWithSingleValues = [{
+      id: 998,
+      studentName: 'Test Student',
+      studentId: 'test123',
+      weekEnding: '2023-01-07',
+      totalHours: 0, // This will be recalculated by the component
+      status: 'Pending',
+      department: 'Test Department',
+      submittedDate: '2023-01-01',
+      jobId: 1,
+      entries: [
+        {
+          date: '2023-01-01',
+          hours: 8,
+          task: 'Development',
+          description: 'Implemented new features'
+        },
+        {
+          date: '2023-01-02',
+          hours: 7.5,
+          task: 'Testing',
+          description: 'Unit testing'
+        },
+        {
+          date: '2023-01-03',
+          hours: '6.5',
+          task: 'Documentation',
+          description: 'API documentation'
+        }
+      ]
+    }];
+    
+    timesheetUtils.getFormattedTimesheets.mockReturnValue(timesheetWithSingleValues);
+    
+    render(
+      <BrowserRouter>
+        <TimeSheetList />
+      </BrowserRouter>
+    );
+    
+    // The total should be 8 + 7.5 + 6.5 = 22.0
+    expect(screen.getByText('22.00')).toBeInTheDocument();
   });
 });

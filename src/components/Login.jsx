@@ -6,6 +6,9 @@ import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { loginUser } from "../services/authService";
+import { Alert, AlertDescription } from "./ui/alert";
 
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -13,12 +16,15 @@ const validateEmail = (email) => {
 }
 
 export default function Login() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = () => { 
+  const handleLogin = async () => { 
+    // Form validation
     if(!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -31,26 +37,48 @@ export default function Login() {
       setError('Password must be at least 6 characters long');
       return;
     }
-    // Perform login logic here
-    if(email === 'test@gmail.com' && password === 'password@123') {
-      window.location.href = '/home'; // Redirect to home page on successful login
+
+    setIsSubmitting(true);
+    
+    try {
+      // Call login service
+      const result = await loginUser({ email, password });
+      
+      if (result.success) {
+        // Redirect based on user type
+        if (result.user.userType === 'employer') {
+          navigate('/employer-dashboard');
+        } else {
+          navigate('/home');
+        }
+      } else {
+        setError(result.message);
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <Card className="w-full max-w-sm p-6 bg-white rounded-xl shadow-md">
-        {/* <button className="mb-4 text-gray-600">
-          &larr;
-        </button> */}
         <h2 className="text-2xl font-bold text-gray-900">Welcome Back!</h2>
         <p className="text-sm text-gray-500">Fill your details or continue with social media</p>
         
         <div className="mt-4 space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">E-mail</label>
-            <Input type="email" placeholder="Enter your mail" className="mt-1" onBlur={(e) => setEmail(e.target.value)}
-                onFocus={() => setError('')}/>
+            <Input 
+              type="email" 
+              placeholder="Enter your email" 
+              className="mt-1" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setError('')}
+            />
           </div>
 
           <div>
@@ -60,7 +88,8 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your Password"
                 className="mt-1 pr-10"
-                onBlur={(e) => setPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 onFocus={() => setError('')}
               />
               <button
@@ -74,11 +103,23 @@ export default function Login() {
           </div>
         </div>
 
+        {error && (
+          <Alert variant="destructive" className="mt-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="text-right text-sm text-gray-500 mt-2">
-          <a href="#" className="hover:underline">Forgot Password?</a>
+          <a href="/forgot-password" className="hover:underline">Forgot Password?</a>
         </div>
 
-        <Button onClick={() => handleLogin()} className="w-full mt-4 bg-green-500 hover:bg-green-600">LOG IN</Button>
+        <Button 
+          onClick={handleLogin} 
+          className="w-full mt-4 bg-green-500 hover:bg-green-600"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "LOGGING IN..." : "LOG IN"}
+        </Button>
         
         <div className="flex items-center gap-2 mt-4">
           <Separator className="flex-1" />
@@ -96,7 +137,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          New User? <a href="#" className="font-medium text-gray-900 hover:underline">Create Account</a>
+          New User? <a href="/register" className="font-medium text-gray-900 hover:underline">Create Account</a>
         </p>
       </Card>
     </div>

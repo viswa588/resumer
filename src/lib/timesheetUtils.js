@@ -20,10 +20,24 @@ export const getFormattedTimesheets = () => {
   return formattedTimesheets;
 };
 
-export const getFormattedTimesheetsData = () => {
-  const storedTimesheets = JSON.parse(localStorage.getItem('timesheets-app') || '[]');
-    
+/**
+ * Updates localStorage.timesheet with formatted timesheet values
+ * @param {Object} timesheet - The timesheet object to store
+ * @returns {void}
+ */
+export const updateTimesheetInLocalStorage = (timesheet) => {
+  // Format the timesheet with the required fields
+  const formattedTimesheet = {
+    id: timesheet.id,
+    studentName: timesheet.userName,
+    studentId: timesheet.userId,
+    weekEnding: timesheet.weekEnding,
+    totalHours: timesheet.totalHours,
+    status: timesheet.status,
+    department: timesheet.jobTitle,
+    submittedDate: timesheet.submittedDate
+  };
   
-  
-  return storedTimesheets;
+  // Store the formatted timesheet in localStorage
+  localStorage.setItem('timesheet', JSON.stringify(formattedTimesheet));
 };

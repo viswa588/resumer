@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import EmployerDashboard from '../EmployerDashboard';
 import { sampleJobApplicants, sampleTimesheets, sampleEmployerJobs } from '../../data/sampleData';
@@ -122,5 +122,58 @@ describe('EmployerDashboard', () => {
       expect(screen.getByText(pendingApprovals.toString())).toBeInTheDocument();
       expect(screen.getByText(pendingTimesheets.toString())).toBeInTheDocument();
     });
+  });
+  
+  test('stats cards are clickable and open modals', async () => {
+    render(
+      <BrowserRouter>
+        <EmployerDashboard />
+      </BrowserRouter>
+    );
+    
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Posted Jobs')).toBeInTheDocument();
+    });
+    
+    // Find the stats cards
+    const postedJobsCard = screen.getByText('Posted Jobs').closest('div').parentElement;
+    const activeJobsCard = screen.getByText('Active Jobs').closest('div').parentElement;
+    const totalApplicantsCard = screen.getByText('Total Applicants').closest('div').parentElement;
+    const pendingApprovalsCard = screen.getByText('Pending Approvals').closest('div').parentElement;
+    const pendingTimesheetsCard = screen.getByText('Pending Timesheets').closest('div').parentElement;
+    
+    // Click on Posted Jobs card and check if modal opens
+    fireEvent.click(postedJobsCard);
+    expect(screen.getByText('All jobs you have posted')).toBeInTheDocument();
+    
+    // Close the modal
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
+    
+    // Click on Active Jobs card and check if modal opens
+    fireEvent.click(activeJobsCard);
+    expect(screen.getByText('Currently active job postings')).toBeInTheDocument();
+    
+    // Close the modal
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    
+    // Click on Total Applicants card and check if modal opens
+    fireEvent.click(totalApplicantsCard);
+    expect(screen.getByText('All applicants for your job postings')).toBeInTheDocument();
+    
+    // Close the modal
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    
+    // Click on Pending Approvals card and check if modal opens
+    fireEvent.click(pendingApprovalsCard);
+    expect(screen.getByText('Applicants waiting for your approval')).toBeInTheDocument();
+    
+    // Close the modal
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    
+    // Click on Pending Timesheets card and check if modal opens
+    fireEvent.click(pendingTimesheetsCard);
+    expect(screen.getByText('Timesheets waiting for your approval')).toBeInTheDocument();
   });
 });
