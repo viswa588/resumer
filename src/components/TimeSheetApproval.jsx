@@ -28,6 +28,7 @@ import { Badge } from "./ui/badge";
 import { Search } from "lucide-react";
 import PaymentProcessing from "./PaymentProcessing";
 import { initializeSampleData } from "../data/sampleData";
+import { getFormattedTimesheetsData } from "../lib/timesheetUtils";
 
 const TimeSheetApproval = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,20 +42,8 @@ const TimeSheetApproval = () => {
     // Initialize sample data if it doesn't exist
     initializeSampleData();
     
-    // Load timesheets from localStorage
-    const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    
-    // Map the timesheets to match the expected format
-    const formattedTimesheets = storedTimesheets.map(ts => ({
-      id: ts.id,
-      studentName: ts.userName,
-      studentId: ts.userId,
-      weekEnding: ts.weekEnding,
-      totalHours: ts.totalHours,
-      status: ts.status,
-      department: ts.jobTitle,
-      submittedDate: ts.submittedDate
-    }));
+    // Get formatted timesheets using the utility function
+    const formattedTimesheets = getFormattedTimesheetsData();
     
     setTimesheets(formattedTimesheets);
   }, []);
@@ -112,14 +101,16 @@ const TimeSheetApproval = () => {
     console.log("View details:", id);
   };
 
-  const filteredTimesheets = timesheets.filter((t) => {
-    const matchesSearch =
-      t.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.studentId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || t.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // const filteredTimesheets = timesheets.filter((t) => {
+  //   const matchesSearch =
+  //     t.studentName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
+  //     t.studentId?.toLowerCase().includes(searchTerm?.toLowerCase());
+  //   const matchesStatus =
+  //     statusFilter === "all" || t.status === statusFilter;
+  //   return matchesSearch && matchesStatus;
+  // });
+
+  const filteredTimesheets = timesheets;
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">

@@ -1,271 +1,181 @@
 export const jobs = [
   {
     id: 1,
-    title: "Senior Frontend Developer",
-    company: "TechCorp Solutions",
-    location: "San Francisco, CA",
-    description: "We are looking for an experienced Frontend Developer to join our team and help build innovative web applications.",
-    requirements: [
-      "5+ years of experience with React",
-      "Strong proficiency in JavaScript/ES6+",
-      "Experience with modern frontend build tools",
-      "Knowledge of responsive design principles"
-    ],
-    salary: "$120,000 - $150,000",
-    jobType: "Full-time",
-    experienceLevel: "Senior",
-    postedDate: "2023-10-15",
-    applicationDeadline: "2023-11-15",
-    hoursPerWeek: 40,
-    startDate: "2023-12-01",
-    endDate: "2024-12-01",
-    benefits: [
-      "Health, dental, and vision insurance",
-      "401(k) matching",
-      "Flexible work hours",
-      "Remote work options",
-      "Professional development budget"
-    ],
-    contactEmail: "careers@techcorp.com"
+    title: "Library Assistant",
+    company: "State University",
+    location: "Boston, MA",
+    description: "Assist with shelving books, managing check-outs, and helping students locate resources in the library.",
+    requirements: ["Good organizational skills", "Basic computer knowledge", "Punctual and reliable"],
+    salary: "$12 - $15/hour",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-15",
+    applicationDeadline: "2025-05-15",
+    hoursPerWeek: 20,
+    startDate: "2025-06-01",
+    endDate: "2025-12-15",
+    benefits: ["Flexible schedule", "On-campus location"],
+    contactEmail: "jobs@stateuniversity.edu"
   },
   {
     id: 2,
-    title: "Backend Engineer",
-    company: "DataFlow Systems",
-    location: "New York, NY",
-    description: "Join our backend team to develop scalable and efficient server-side applications.",
-    requirements: [
-      "3+ years experience with Node.js",
-      "Strong knowledge of SQL and NoSQL databases",
-      "Experience with microservices architecture",
-      "Understanding of API design principles"
-    ],
-    salary: "$110,000 - $140,000",
-    jobType: "Full-time",
-    experienceLevel: "Mid-Senior",
-    postedDate: "2023-10-20",
-    applicationDeadline: "2023-11-20",
-    hoursPerWeek: 40,
-    startDate: "2023-12-15",
-    endDate: "2024-12-15",
-    benefits: [
-      "Comprehensive health insurance",
-      "Retirement plan with company match",
-      "Unlimited PTO",
-      "Hybrid work model",
-      "Annual learning stipend"
-    ],
-    contactEmail: "jobs@dataflow.com"
+    title: "Cafeteria Worker",
+    company: "Campus Dining Services",
+    location: "Chicago, IL",
+    description: "Support food preparation and clean-up in the university dining hall.",
+    requirements: ["Able to stand for long hours", "Team player", "Food handling experience preferred"],
+    salary: "$13/hour",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-10",
+    applicationDeadline: "2025-05-10",
+    hoursPerWeek: 15,
+    startDate: "2025-06-01",
+    endDate: "2025-12-31",
+    benefits: ["Free meals during shift"],
+    contactEmail: "dining@univjobs.edu"
   },
   {
     id: 3,
-    title: "Full Stack Developer",
-    company: "Innovation Labs",
-    location: "Austin, TX",
-    description: "Looking for a versatile developer who can work across the entire stack.",
-    requirements: [
-      "Experience with both frontend and backend development",
-      "Knowledge of React and Node.js",
-      "Database design and optimization skills",
-      "Understanding of cloud services (AWS/Azure)"
-    ],
-    salary: "$100,000 - $130,000",
-    jobType: "Full-time",
-    experienceLevel: "Mid-level",
-    postedDate: "2023-10-18",
-    applicationDeadline: "2023-11-18",
-    hoursPerWeek: 35,
-    startDate: "2023-12-10",
-    endDate: "2024-12-10",
-    benefits: [
-      "Medical and dental coverage",
-      "Stock options",
-      "Flexible working hours",
-      "Remote work available",
-      "Gym membership"
-    ],
-    contactEmail: "recruiting@innovationlabs.com"
+    title: "Gas Station Cashier",
+    company: "Speedy Fuel Mart",
+    location: "Houston, TX",
+    description: "Handle cash transactions, assist customers, and maintain cleanliness at the gas station.",
+    requirements: ["Basic math skills", "Customer service attitude", "Reliable transportation"],
+    salary: "$14/hour",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-20",
+    applicationDeadline: "2025-05-20",
+    hoursPerWeek: 20,
+    startDate: "2025-06-01",
+    endDate: "2025-12-31",
+    benefits: ["Flexible shifts", "Night shift bonus"],
+    contactEmail: "hr@speedyfuel.com"
   },
   {
     id: 4,
-    title: "DevOps Engineer",
-    company: "Cloud Solutions Inc",
-    location: "Seattle, WA",
-    description: "Help us build and maintain our cloud infrastructure and deployment pipelines.",
-    requirements: [
-      "Experience with AWS/Azure/GCP",
-      "Knowledge of Docker and Kubernetes",
-      "CI/CD pipeline experience",
-      "Infrastructure as Code expertise"
-    ]
+    title: "Waiter/Waitress",
+    company: "The Grill House",
+    location: "New York, NY",
+    description: "Take orders, serve food, and provide excellent customer service in a busy restaurant.",
+    requirements: ["Good communication skills", "Able to work nights/weekends", "Experience is a plus"],
+    salary: "$10/hour + tips",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-05",
+    applicationDeadline: "2025-05-05",
+    hoursPerWeek: 20,
+    startDate: "2025-05-20",
+    endDate: "2025-12-20",
+    benefits: ["Meal discounts", "Flexible schedule"],
+    contactEmail: "jobs@thegrillhouse.com"
   },
   {
     id: 5,
-    title: "Mobile Developer",
-    company: "AppWorks Mobile",
-    description: "Join our mobile development team to create cutting-edge iOS and Android applications.",
+    title: "Hospital Front Desk Assistant",
+    company: "City Medical Center",
     location: "Los Angeles, CA",
-    requirements: [
-      "Experience with React Native",
-      "Knowledge of iOS or Android native development",
-      "Understanding of mobile UI/UX principles",
-      "API integration experience"
-    ]
-  },
-  {
+    description: "Greet visitors, answer phone calls, and assist with administrative tasks at the hospital front desk.",
+    requirements: ["Professional demeanor", "Customer service skills", "Basic computer knowledge"],
+    salary: "$16/hour",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-22",
+    applicationDeadline: "2025-05-22",
+    hoursPerWeek: 20,
+    startDate: "2025-06-01",
+    endDate: "2025-12-31",
+    benefits: ["Professional work environment", "Hands-on experience in healthcare setting"],
+    contactEmail: "careers@citymedcenter.org"
+  }, {
     id: 6,
-    title: "UI/UX Designer",
-    company: "Creative Digital Agency",
-    location: "Chicago, IL",
-    description: "Create beautiful and intuitive user interfaces for web and mobile applications.",
-    requirements: [
-      "Strong portfolio of UI/UX work",
-      "Proficiency in Figma and Adobe Creative Suite",
-      "Understanding of user-centered design principles",
-      "Experience with design systems"
-    ]
+    title: "Retail Sales Associate",
+    company: "Target",
+    location: "Seattle, WA",
+    description: "Assist customers, stock shelves, and manage check-out at a busy retail store.",
+    requirements: ["Customer service skills", "Ability to lift up to 30 lbs", "Attention to detail"],
+    salary: "$15/hour",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-10",
+    applicationDeadline: "2025-05-10",
+    hoursPerWeek: 20,
+    startDate: "2025-05-25",
+    endDate: "2025-12-31",
+    benefits: ["Employee discounts", "Flexible shifts"],
+    contactEmail: "hiring@target.com"
   },
   {
     id: 7,
-    title: "Data Scientist",
-    company: "Analytics Pro",
-    location: "Boston, MA",
-    description: "Apply machine learning and statistical analysis to solve complex business problems.",
-    requirements: [
-      "Advanced degree in Statistics, Mathematics, or related field",
-      "Experience with Python and R",
-      "Knowledge of machine learning algorithms",
-      "Data visualization skills"
-    ]
+    title: "Barista",
+    company: "Starbucks",
+    location: "San Diego, CA",
+    description: "Prepare coffee and beverages, take customer orders, and maintain a clean workspace.",
+    requirements: ["Friendly attitude", "Multitasking skills", "Basic math skills"],
+    salary: "$14/hour + tips",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-18",
+    applicationDeadline: "2025-05-18",
+    hoursPerWeek: 18,
+    startDate: "2025-06-01",
+    endDate: "2025-12-15",
+    benefits: ["Free drinks on shift", "Tuition assistance eligibility"],
+    contactEmail: "jobs@starbucks.com"
   },
   {
     id: 8,
-    title: "Security Engineer",
-    company: "SecureNet",
-    location: "Washington, DC",
-    description: "Help protect our systems and data from security threats and vulnerabilities.",
-    requirements: [
-      "Experience in cybersecurity",
-      "Knowledge of security protocols and best practices",
-      "Familiarity with penetration testing",
-      "Understanding of compliance requirements"
-    ]
+    title: "Food Delivery Driver",
+    company: "Uber Eats",
+    location: "Miami, FL",
+    description: "Pick up and deliver food orders to customers using your own vehicle or bike.",
+    requirements: ["Valid driver's license", "Smartphone", "Clean driving record"],
+    salary: "$12 - $20/hour (including tips)",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-25",
+    applicationDeadline: "2025-06-01",
+    hoursPerWeek: 20,
+    startDate: "2025-06-05",
+    endDate: "2025-12-31",
+    benefits: ["Flexible schedule", "Weekly payouts"],
+    contactEmail: "partners@ubereats.com"
   },
   {
     id: 9,
-    title: "Product Manager",
-    company: "Product Innovations",
-    location: "Miami, FL",
-    description: "Lead the development and launch of new product features and initiatives.",
-    requirements: [
-      "3+ years of product management experience",
-      "Strong analytical and problem-solving skills",
-      "Excellent communication abilities",
-      "Experience with Agile methodologies"
-    ]
+    title: "Teaching Assistant (TA)",
+    company: "University of Michigan",
+    location: "Ann Arbor, MI",
+    description: "Assist professors with grading, student support, and classroom activities.",
+    requirements: ["Enrolled in graduate program", "Strong academic record", "Good communication skills"],
+    salary: "$16/hour",
+    jobType: "Part-time",
+    experienceLevel: "Intermediate",
+    postedDate: "2025-04-12",
+    applicationDeadline: "2025-05-10",
+    hoursPerWeek: 15,
+    startDate: "2025-09-01",
+    endDate: "2025-12-15",
+    benefits: ["On-campus role", "Tuition discount eligibility"],
+    contactEmail: "academicaffairs@umich.edu"
   },
   {
     id: 10,
-    title: "QA Engineer",
-    company: "Quality First",
-    location: "Denver, CO",
-    description: "Ensure the quality of our software products through comprehensive testing.",
-    requirements: [
-      "Experience with automated testing frameworks",
-      "Strong attention to detail",
-      "Knowledge of testing methodologies",
-      "Experience with test management tools"
-    ]
-  },
-  {
-    id: 11,
-    title: "Machine Learning Engineer",
-    company: "AI Solutions Ltd",
-    location: "San Jose, CA",
-    description: "Develop and deploy machine learning models for various applications.",
-    requirements: [
-      "Strong background in machine learning",
-      "Experience with TensorFlow or PyTorch",
-      "Python programming expertise",
-      "Understanding of deep learning architectures"
-    ]
-  },
-  {
-    id: 12,
-    title: "Blockchain Developer",
-    company: "Crypto Innovations",
-    location: "Miami, FL",
-    description: "Build decentralized applications and smart contracts.",
-    requirements: [
-      "Experience with blockchain technologies",
-      "Smart contract development",
-      "Knowledge of Solidity",
-      "Understanding of cryptography"
-    ]
-  },
-  {
-    id: 13,
-    title: "Cloud Architect",
-    company: "CloudTech Solutions",
-    location: "Portland, OR",
-    description: "Design and implement cloud-based solutions for enterprise clients.",
-    requirements: [
-      "AWS/Azure certification",
-      "Experience with cloud architecture",
-      "Knowledge of serverless computing",
-      "Understanding of cloud security"
-    ]
-  },
-  {
-    id: 14,
-    title: "Technical Writer",
-    company: "Documentation Pro",
-    location: "Remote",
-    description: "Create clear and comprehensive technical documentation for our products.",
-    requirements: [
-      "Strong writing and editing skills",
-      "Experience with documentation tools",
-      "Ability to understand technical concepts",
-      "Knowledge of API documentation"
-    ]
-  },
-  {
-    id: 15,
-    title: "Systems Administrator",
-    company: "IT Operations Inc",
+    title: "Janitorial Staff",
+    company: "CleanPro Services",
     location: "Philadelphia, PA",
-    description: "Manage and maintain our IT infrastructure and systems.",
-    requirements: [
-      "Experience with Linux/Unix systems",
-      "Network administration skills",
-      "Knowledge of system security",
-      "Troubleshooting expertise"
-    ]
-  },
-  {
-    id: 16,
-    title: "AR/VR Developer",
-    company: "Virtual Worlds",
-    location: "Portland, OR",
-    description: "Create immersive AR/VR experiences using cutting-edge technology.",
-    requirements: [
-      "Experience with Unity or Unreal Engine",
-      "3D modeling skills",
-      "Knowledge of AR/VR development",
-      "Understanding of spatial computing"
-    ]
-  },
-  {
-    id: 17,
-    title: "Database Administrator",
-    company: "Data Systems Corp",
-    location: "Houston, TX",
-    description: "Manage and optimize database systems for large-scale applications.",
-    requirements: [
-      "Experience with SQL and NoSQL databases",
-      "Database optimization skills",
-      "Backup and recovery expertise",
-      "Performance tuning knowledge"
-    ]
+    description: "Perform general cleaning duties in office and campus buildings, including mopping, trash removal, and restroom maintenance.",
+    requirements: ["Able to work night shifts", "Physically fit", "Attention to cleanliness"],
+    salary: "$14/hour",
+    jobType: "Part-time",
+    experienceLevel: "Entry",
+    postedDate: "2025-04-08",
+    applicationDeadline: "2025-05-08",
+    hoursPerWeek: 20,
+    startDate: "2025-05-20",
+    endDate: "2025-12-31",
+    benefits: ["Shift differentials", "Uniform provided"],
+    contactEmail: "jobs@cleanpropa.com"
   }
 ];

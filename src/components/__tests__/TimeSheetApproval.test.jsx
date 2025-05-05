@@ -2,6 +2,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import TimeSheetApproval from '../TimeSheetApproval';
 import { sampleTimesheets } from '../../data/sampleData';
+import * as timesheetUtils from '../../lib/timesheetUtils';
+
+// Mock the timesheetUtils module
+jest.mock('../../lib/timesheetUtils', () => ({
+  getFormattedTimesheets: jest.fn()
+}));
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -38,6 +44,20 @@ describe('TimeSheetApproval', () => {
     
     // Setup localStorage with sample timesheet data
     localStorageMock.setItem('timesheets', JSON.stringify(sampleTimesheets));
+    
+    // Mock the getFormattedTimesheets function to return formatted sample data
+    const formattedTimesheets = sampleTimesheets.map(ts => ({
+      id: ts.id,
+      studentName: ts.userName,
+      studentId: ts.userId,
+      weekEnding: ts.weekEnding,
+      totalHours: ts.totalHours,
+      status: ts.status,
+      department: ts.jobTitle,
+      submittedDate: ts.submittedDate
+    }));
+    
+    timesheetUtils.getFormattedTimesheets.mockReturnValue(formattedTimesheets);
   });
 
   test('renders timesheet approval page with sample data', async () => {

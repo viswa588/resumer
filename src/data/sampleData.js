@@ -215,6 +215,117 @@ export const sampleTimesheets = [
       { date: "2023-12-21", hours: 8, task: "Development", description: "Bug fixes" },
       { date: "2023-12-22", hours: 8, task: "Meeting", description: "Client demo" }
     ]
+  },
+  {
+    id: 7,
+    userId: "user404",
+    userName: "Robert Taylor",
+    jobId: 3,
+    jobTitle: "UX Designer",
+    weekEnding: "2023-12-31",
+    totalHours: 38,
+    status: "Pending",
+    submittedDate: "2024-01-01T09:15:00Z",
+    entries: [
+      { date: "2023-12-25", hours: 8, task: "Design", description: "User flow diagrams" },
+      { date: "2023-12-26", hours: 8, task: "Design", description: "Interface mockups" },
+      { date: "2023-12-27", hours: 8, task: "Research", description: "Usability testing" },
+      { date: "2023-12-28", hours: 7, task: "Design", description: "Design iterations" },
+      { date: "2023-12-29", hours: 7, task: "Meeting", description: "Stakeholder presentation" }
+    ]
+  },
+  {
+    id: 8,
+    userId: "user505",
+    userName: "Amanda Garcia",
+    jobId: 4,
+    jobTitle: "Full Stack Developer",
+    weekEnding: "2023-12-31",
+    totalHours: 40,
+    status: "Under Review",
+    submittedDate: "2024-01-01T10:30:00Z",
+    entries: [
+      { date: "2023-12-25", hours: 8, task: "Development", description: "API integration" },
+      { date: "2023-12-26", hours: 8, task: "Development", description: "Frontend components" },
+      { date: "2023-12-27", hours: 8, task: "Testing", description: "Cross-browser testing" },
+      { date: "2023-12-28", hours: 8, task: "Development", description: "Responsive design" },
+      { date: "2023-12-29", hours: 8, task: "Documentation", description: "Code documentation" }
+    ]
+  },
+  {
+    id: 9,
+    userId: "user606",
+    userName: "William Chen",
+    jobId: 5,
+    jobTitle: "DevOps Engineer",
+    weekEnding: "2023-12-31",
+    totalHours: 45,
+    status: "Pending",
+    submittedDate: "2024-01-01T11:45:00Z",
+    entries: [
+      { date: "2023-12-25", hours: 9, task: "Infrastructure", description: "Cloud setup" },
+      { date: "2023-12-26", hours: 9, task: "Development", description: "CI/CD pipeline" },
+      { date: "2023-12-27", hours: 9, task: "Testing", description: "Deployment testing" },
+      { date: "2023-12-28", hours: 9, task: "Infrastructure", description: "Kubernetes configuration" },
+      { date: "2023-12-29", hours: 9, task: "Documentation", description: "Infrastructure documentation" }
+    ]
+  },
+  {
+    id: 10,
+    userId: "user707",
+    userName: "Olivia Rodriguez",
+    jobId: 1,
+    jobTitle: "Frontend Developer",
+    weekEnding: "2024-01-07",
+    totalHours: 37,
+    status: "Approved",
+    submittedDate: "2024-01-08T09:00:00Z",
+    approvedDate: "2024-01-09T14:00:00Z",
+    entries: [
+      { date: "2024-01-01", hours: 7, task: "Development", description: "UI components" },
+      { date: "2024-01-02", hours: 8, task: "Development", description: "State management" },
+      { date: "2024-01-03", hours: 8, task: "Testing", description: "Unit tests" },
+      { date: "2024-01-04", hours: 7, task: "Development", description: "Performance optimization" },
+      { date: "2024-01-05", hours: 7, task: "Meeting", description: "Code review session" }
+    ]
+  },
+  {
+    id: 11,
+    userId: "user808",
+    userName: "James Wilson",
+    jobId: 2,
+    jobTitle: "Backend Developer",
+    weekEnding: "2024-01-07",
+    totalHours: 41,
+    status: "Rejected",
+    submittedDate: "2024-01-08T10:15:00Z",
+    rejectedDate: "2024-01-09T15:30:00Z",
+    rejectionReason: "Overtime not pre-approved",
+    entries: [
+      { date: "2024-01-01", hours: 8, task: "Development", description: "Database schema design" },
+      { date: "2024-01-02", hours: 8, task: "Development", description: "API endpoints" },
+      { date: "2024-01-03", hours: 9, task: "Testing", description: "Load testing" },
+      { date: "2024-01-04", hours: 8, task: "Development", description: "Error handling" },
+      { date: "2024-01-05", hours: 8, task: "Documentation", description: "API documentation" }
+    ]
+  },
+  {
+    id: 12,
+    userId: "user909",
+    userName: "Sophia Kim",
+    jobId: 3,
+    jobTitle: "UX Designer",
+    weekEnding: "2024-01-07",
+    totalHours: 39,
+    status: "Under Review",
+    submittedDate: "2024-01-08T11:30:00Z",
+    entries: [
+      { date: "2024-01-01", hours: 8, task: "Design", description: "User personas" },
+      { date: "2024-01-02", hours: 8, task: "Design", description: "Information architecture" },
+      { date: "2024-01-03", hours: 8, task: "Research", description: "Competitor analysis" },
+      { date: "2024-01-04", hours: 7, task: "Design", description: "Visual design" },
+      { date: "2024-01-05", hours: 8, task: "Meeting", description: "Design critique" }
+    ]
   }
 ];
 
@@ -287,6 +398,11 @@ export const sampleEmployerJobs = [
   }
 ];
 
+const record1 = [{ id:1, userName: 'Michel', userId: 'mic001',weekEnding: '1',totalHours: 35,status: 'pending', jobTitle: 'Helper',submittedDate: new Date()}, 
+  { id:2, userName: 'John', userId: 'john34d',weekEnding: '3',totalHours: 12,status: 'Approved', jobTitle: 'Dev',submittedDate: new Date()},
+  { id:3, userName: 'Viswa', userId: 'viswa588',weekEnding: '5',totalHours: 29,status: 'pending', jobTitle: 'Helper',submittedDate: new Date()},
+  { id:4, userName: 'Ganesh', userId: 'ganeshd123',weekEnding: '2',totalHours: 40,status: 'Rejected', jobTitle: 'painter',submittedDate: new Date()}]
+
 // Initialize localStorage with sample data if it doesn't exist
 export const initializeSampleData = () => {
   if (!localStorage.getItem('jobApplicants')) {
@@ -295,6 +411,10 @@ export const initializeSampleData = () => {
   
   if (!localStorage.getItem('timesheets')) {
     localStorage.setItem('timesheets', JSON.stringify(sampleTimesheets));
+  }
+
+  if (!localStorage.getItem('timesheets-app')) {
+    localStorage.setItem('timesheets-app', JSON.stringify(record1));
   }
   
   if (!localStorage.getItem('employerJobs')) {

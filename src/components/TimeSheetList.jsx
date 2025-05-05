@@ -12,6 +12,7 @@ import { Table, TableHeader, TableBody, TableRow, TableCell } from "./ui/table";
 import { Badge } from "./ui/badge";
 import { format } from "date-fns";
 import { jobs } from "../data/jobs";
+import { getFormattedTimesheets } from "../lib/timesheetUtils";
 
 const TimeSheetList = () => {
   const { id } = useParams();
@@ -20,8 +21,8 @@ const TimeSheetList = () => {
   const [jobFilter, setJobFilter] = useState(null);
 
   useEffect(() => {
-    // Load timesheets from localStorage
-    let timesheetsData = JSON.parse(localStorage.getItem('timesheets') || '[]');
+    // Get formatted timesheets using the utility function
+    let timesheetsData = getFormattedTimesheets();
     
     // If we have a specific job ID to filter by
     if (id) {
