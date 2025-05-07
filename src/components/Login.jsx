@@ -49,7 +49,7 @@ export default function Login() {
         if (result.user.userType === 'employer') {
           navigate('/employer-dashboard');
         } else {
-          navigate('/home');
+          navigate('/profile');
         }
       } else {
         setError(result.message);
@@ -110,7 +110,7 @@ export default function Login() {
         )}
 
         <div className="text-right text-sm text-gray-500 mt-2">
-          <a href="/forgot-password" className="hover:underline">Forgot Password?</a>
+          <a onClick={() => navigate("/forgot-password")} className="hover:underline">Forgot Password?</a>
         </div>
 
         <Button 
@@ -137,7 +137,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          New User? <a href="/register" className="font-medium text-gray-900 hover:underline">Create Account</a>
+          New User? <a onClick={() => navigate("/create")} className="font-medium text-gray-900 hover:underline">Create Account</a>
         </p>
       </Card>
     </div>

@@ -53,7 +53,7 @@ const ProtectedRoute = ({ element, requiredUserType }) => {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<EmployerLogin />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<EmployerLogin />} />
       <Route path="/register" element={<Registration />} />
       <Route path="/verify-account" element={<VerifyAccount />} />
@@ -91,7 +91,7 @@ function AppRoutes() {
 
 function App() {
   return (  
-    <Router>
+    <Router> 
       <AuthProvider>
         <NotificationProvider>
           <div  className="App min-h-screen bg-gradient-to-r from-red-100 via-blue-100 to-white text-slate-800">

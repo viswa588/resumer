@@ -140,7 +140,7 @@ export default function EmployerLogin() {
         )}
 
         <div className="text-right text-sm text-gray-500 mt-2">
-          <a href="/forgot-password" className="hover:underline">Forgot Password?</a>
+          <a onClick={() => navigate("/forgot-password")} className="hover:underline">Forgot Password?</a>
         </div>
 
         <Button 
@@ -167,7 +167,7 @@ export default function EmployerLogin() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
-          New User? <a href="/register" className="font-medium text-gray-900 hover:underline">Create Account</a>
+          New User? <a onClick={() => navigate("/register")} className="font-medium text-gray-900 hover:underline">Create Account</a>
         </p>
       </Card>
     </div>

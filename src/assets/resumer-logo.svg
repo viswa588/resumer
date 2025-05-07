@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background shape -->
+  <rect width="200" height="60" rx="8" fill="#ffffff"/>
+  
+  <!-- Document icon -->
+  <path d="M30 15H50C51.1046 15 52 15.8954 52 17V43C52 44.1046 51.1046 45 50 45H30C28.8954 45 28 44.1046 28 43V17C28 15.8954 28.8954 15 30 15Z" fill="#E5E7EB"/>
+  <path d="M34 22H46M34 28H46M34 34H40" stroke="#4B5563" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Text -->
+  <text x="60" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#10B981">
+    Resumer
+  </text>
+  
+  <!-- Accent line -->
+  <path d="M60 40H140" stroke="#10B981" stroke-width="2" stroke-linecap="round"/>
+</svg>

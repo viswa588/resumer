@@ -122,7 +122,7 @@ export default function ForgotPassword() {
 
         <p className="text-center text-sm text-gray-500 mt-4">
           Remember your password?{" "}
-          <a href="/login" className="font-medium text-gray-900 hover:underline">
+          <a onClick={() => navigate("/login")} className="font-medium text-gray-900 hover:underline">
             Back to Login
           </a>
         </p>

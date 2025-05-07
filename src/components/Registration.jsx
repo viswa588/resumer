@@ -104,7 +104,7 @@ export default function Registration() {
       <Card className="w-full max-w-md p-6 shadow-md">
         <h2 className="text-center text-2xl font-bold">Create Account</h2>
         <p className="text-center text-sm text-gray-500 mt-2">
-          Already have an account? <a href="/login" className="text-blue-600 hover:underline">Login</a>
+          Already have an account? <a onClick={() => navigate("/login")} className="text-blue-600 hover:underline">Login</a>
         </p>
         
         <form onSubmit={handleSubmit}>
