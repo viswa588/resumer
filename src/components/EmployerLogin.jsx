@@ -27,6 +27,19 @@ export default function EmployerLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => { 
+    // Handle default login for student and employer
+    if (email === "student@re.com" && password === "$tudent") {
+      setUserRole(USER_TYPES.JOB_SEEKER);
+      navigate("/profile");
+      return;
+    }
+
+    if (email === "employer@re.com" && password === "employer#") {
+      setUserRole(USER_TYPES.EMPLOYER);
+      navigate("/employer-dashboard");
+      return;
+    }
+
     // Form validation
     if(!email || !password) {
       setError('Please fill in all fields');
@@ -59,7 +72,7 @@ export default function EmployerLogin() {
         if (result.user.userType === USER_TYPES.EMPLOYER) {
           navigate('/employer-dashboard');
         } else {
-          navigate('/home');
+          navigate('/profile');
         }
       } else {
         setError(result.message);

@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf } from 'react-icons/fa';
+import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf, FaFileInvoiceDollar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import HistoryModal from './HistoryModal';
 import JobCard from './JobCard';
 import JobModal from './JobModal';
 import VideoRecordModal from './VideoRecordModal';
+import PaychecksModal from './PaychecksModal';
 import NotificationDropdown from './NotificationDropdown';
 import NotificationBadge from './NotificationBadge';
+import PaycheckBadge from './PaycheckBadge';
 import { useNotification } from '../context/NotificationContext';
+import { initializeSamplePaychecks } from '../services/paycheckService';
 import logo from '../assets/icon.png';
 import { jobs } from '../data/jobs';
 import { calculateHours } from '../lib/hourUtils';
@@ -23,12 +26,15 @@ const Profile = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isPaychecksModalOpen, setIsPaychecksModalOpen] = useState(false);
   const [acceptedJobs, setAcceptedJobs] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
   const [resume, setResume] = useState(null);
   const [resumeFileName, setResumeFileName] = useState('');
   const [showAlertDropdown, setShowAlertDropdown] = useState(false);
   const [showEmailDropdown, setShowEmailDropdown] = useState(false);
+  const [paychecks, setPaychecks] = useState([]);
+  const [newPaychecksCount, setNewPaychecksCount] = useState(0);
   
   // Get notification context
   const { 
@@ -65,6 +71,23 @@ const Profile = () => {
       setResume(savedResume);
       setResumeFileName(savedResumeFileName || 'resume.pdf');
     }
+    
+    // Load paychecks from localStorage if they exist
+    const savedPaychecks = JSON.parse(localStorage.getItem('userPaychecks') || '[]');
+    if (savedPaychecks.length > 0) {
+      setPaychecks(savedPaychecks);
+    } else {
+      // Initialize sample paychecks if none exist
+      const samplePaychecks = initializeSamplePaychecks();
+      setPaychecks(samplePaychecks);
+    }
+    
+    // Set new paychecks count - in a real app, this would check for unread/new paychecks
+    const viewedPaychecks = JSON.parse(localStorage.getItem('viewedPaychecks') || '[]');
+    const newPaychecks = savedPaychecks.length > 0 
+      ? savedPaychecks.filter(p => !viewedPaychecks.includes(p.id))
+      : 2; // Default to 2 new paychecks for demo purposes
+    setNewPaychecksCount(typeof newPaychecks === 'number' ? newPaychecks : newPaychecks.length);
   }, []);
 
   const handleVideoModalOpen = () => {
@@ -73,6 +96,18 @@ const Profile = () => {
 
   const handleVideoModalClose = () => {
     setIsVideoModalOpen(false);
+  };
+  
+  const handlePaychecksModalOpen = () => {
+    setIsPaychecksModalOpen(true);
+    // Mark all paychecks as viewed
+    const payCheckIds = paychecks.map(p => p.id);
+    localStorage.setItem('viewedPaychecks', JSON.stringify(payCheckIds));
+    setNewPaychecksCount(0);
+  };
+
+  const handlePaychecksModalClose = () => {
+    setIsPaychecksModalOpen(false);
   };
 
   const handleLogout = () => {
@@ -271,6 +306,7 @@ const Profile = () => {
         </div>
       </div>
       <VideoRecordModal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} />
+      <PaychecksModal isOpen={isPaychecksModalOpen} onClose={handlePaychecksModalClose} paychecks={paychecks} />
       {/* Profile Content */}
       <div className="container mx-auto px-4 space-y-4">
         <div className="flex flex-col md:flex-row-reverse gap-6">
@@ -287,9 +323,15 @@ const Profile = () => {
                     onClick={handleVideoModalOpen}
                     title="Record Video/Audio" 
                   />
-                  
                 </div>
-                
+                <div className="relative">
+                  <FaFileInvoiceDollar 
+                    className="text-4xl text-green-500 mt-3 cursor-pointer hover:text-green-600"
+                    onClick={handlePaychecksModalOpen}
+                    title="View Paychecks" 
+                  />
+                  <PaycheckBadge count={newPaychecksCount} />
+                </div>
               </div>
             </div>
           </div>
@@ -392,6 +434,8 @@ const Profile = () => {
                         )}
                       </div>
                     )}
+                    
+                    {/* We've moved the Paychecks Section to a separate area */}
                   </div>
                 ))}
                 </div>
@@ -516,31 +560,14 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Job Search Section */}
+        {/* Job Search Section - Placeholder */}
         <div className="w-full bg-white rounded-lg shadow-md p-6">
-          
-          {/* <div className="flex items-center bg-gray-100 rounded-lg px-4 py-2">
-            <FaSearch className="text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search jobs..."
-              value={searchTerm}
-              onChange={handleJobSearch}
-              className="w-full bg-transparent focus:outline-none"
-            />
-          </div> */}
-          
-          {/* <div className="mt-6 space-y-4">
-            {filteredJobs.map(job => (
-              <JobCard
-                key={job.id}
-                job={job}
-                onSelect={setSelectedJob}
-                onApply={handleJobApply}
-                isApplied={appliedJobs.some(j => j.id === job.id)}
-              />
-            ))}
-          </div> */}
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Recent Activity</h3>
+          </div>
+          <p className="text-gray-500 text-center py-8">
+            Your recent activity will appear here.
+          </p>
         </div>
 
         {/* History Modal */}
