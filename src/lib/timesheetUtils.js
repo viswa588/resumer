@@ -14,7 +14,11 @@ export const getFormattedTimesheets = () => {
     totalHours: ts.totalHours,
     status: ts.status,
     department: ts.jobTitle,
-    submittedDate: ts.submittedDate
+    submittedDate: ts.submittedDate,
+    date: ts.date || ts.submittedDate,
+    jobId: ts.jobId,
+    entries: ts.entries || [],
+    jobTitle: ts.jobTitle
   }));
   
   return formattedTimesheets;
@@ -35,7 +39,11 @@ export const updateTimesheetInLocalStorage = (timesheet) => {
     totalHours: timesheet.totalHours,
     status: timesheet.status,
     department: timesheet.jobTitle,
-    submittedDate: timesheet.submittedDate
+    submittedDate: timesheet.submittedDate,
+    date: timesheet.date || timesheet.submittedDate,
+    jobId: timesheet.jobId,
+    entries: timesheet.entries || [],
+    jobTitle: timesheet.jobTitle
   };
   
   // Store the formatted timesheet in localStorage

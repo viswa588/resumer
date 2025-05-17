@@ -1,1167 +1,574 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { useNavigate } from "react-router-dom";
-import { 
-  Briefcase, 
-  Users, 
-  Clock, 
-  CreditCard, 
-  Plus, 
-  FileText, 
-  CheckCircle, 
-  XCircle,
-  LogOut,
-  X,
-  Eye,
-  Calendar,
-  MapPin,
-  DollarSign,
-  BarChart,
-  PieChart,
-  TrendingUp,
-  Filter,
-  AlertCircle,
-  Award,
-  Percent
-} from "lucide-react";
-import { initializeSampleData } from "../data/sampleData";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Badge } from "./ui/badge";
-import { Select } from "./ui/select";
-import logo from '../assets/icon.png';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { FaBuilding, FaUsers, FaFileAlt, FaClipboardList, FaCheck, FaTimes, FaSignOutAlt, FaUserTie, FaRegClock, FaCamera, FaEdit, FaSave } from 'react-icons/fa';
+import { getJobApplications, approveJobApplication, rejectJobApplication } from '../services/applicationService';
+import { getUserProfile, saveUserProfile } from '../services/userService';
+import logo from '../assets/icon.png'; // Default logo
 
-export default function EmployerDashboard() {
+const EmployerDashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    postedJobs: 0,
-    activeJobs: 0,
-    totalApplicants: 0,
-    pendingApprovals: 0,
-    pendingTimesheets: 0,
-    // New metrics
-    totalRevenue: 0,
-    averageSalary: 0,
-    applicationConversionRate: 0,
-    approvalRate: 0,
-    averageTimeToHire: 0
+  const [applications, setApplications] = useState([]);
+  const [pendingApplications, setPendingApplications] = useState([]);
+  const [approvedApplications, setApprovedApplications] = useState([]);
+  const [rejectedApplications, setRejectedApplications] = useState([]);
+  const [userProfile, setUserProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    about: ''
   });
-  
-  const [recentJobs, setRecentJobs] = useState([]);
-  const [recentApplicants, setRecentApplicants] = useState([]);
-  
-  // State for modal visibility
-  const [activeModal, setActiveModal] = useState(null); // 'postedJobs', 'activeJobs', 'totalApplicants', 'pendingApprovals', 'pendingTimesheets', 'jobPerformance', 'financialInsights'
-  
-  // State for modal data
-  const [allJobs, setAllJobs] = useState([]);
-  const [activeJobsList, setActiveJobsList] = useState([]);
-  const [allApplicants, setAllApplicants] = useState([]);
-  const [pendingApprovalsList, setPendingApprovalsList] = useState([]);
-  const [pendingTimesheetsList, setPendingTimesheetsList] = useState([]);
-  
-  // New state for enhanced features
-  const [jobPerformanceData, setJobPerformanceData] = useState([]);
-  const [timeFilter, setTimeFilter] = useState('all'); // 'week', 'month', 'quarter', 'year', 'all'
-  const [sortBy, setSortBy] = useState('recent'); // 'recent', 'applicants', 'performance'
-  const [topPerformingJobs, setTopPerformingJobs] = useState([]);
-  const [financialData, setFinancialData] = useState({
-    totalRevenue: 0,
-    totalCost: 0,
-    profit: 0,
-    revenueByJob: []
+  const [companyInfo, setCompanyInfo] = useState({
+    name: 'Tech Innovations Inc.',
+    industry: 'Information Technology',
+    location: 'San Francisco, CA',
+    employees: '50-200',
+    founded: '2015',
+    about: 'Tech Innovations Inc. is a leading technology company specializing in innovative software solutions for businesses of all sizes. Our mission is to transform how companies operate through cutting-edge technology and exceptional service. Founded in 2015, we have grown to become a trusted partner for over 500 businesses worldwide, with a team of dedicated professionals committed to delivering excellence.'
+  });
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(false);
+  const [editedProfile, setEditedProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    about: ''
+  });
+  const [editedCompany, setEditedCompany] = useState({
+    name: '',
+    industry: '',
+    location: '',
+    employees: '',
+    founded: '',
+    about: ''
   });
 
   useEffect(() => {
-    // Initialize sample data if it doesn't exist
-    initializeSampleData();
+    // Load user profile
+    const profile = getUserProfile();
+    setUserProfile(profile);
+    setEditedProfile(profile);
     
-    // Load employer data from localStorage
-    const employerEmail = localStorage.getItem('userEmail') || 'employer@example.com';
+    // Load company info from localStorage if it exists
+    const savedCompanyInfo = localStorage.getItem('companyInfo');
+    if (savedCompanyInfo) {
+      const parsedCompanyInfo = JSON.parse(savedCompanyInfo);
+      setCompanyInfo(parsedCompanyInfo);
+      setEditedCompany(parsedCompanyInfo);
+    } else {
+      setEditedCompany(companyInfo);
+    }
     
-    // Get posted jobs from localStorage or use empty array if none exist
-    const allJobsData = JSON.parse(localStorage.getItem('employerJobs') || '[]');
-    const employerJobs = allJobsData.filter(job => job.employerEmail === employerEmail);
+    // Load company logo from localStorage if it exists
+    const savedLogo = localStorage.getItem('companyLogo');
+    if (savedLogo) {
+      setCompanyLogo(savedLogo);
+    }
     
-    // Get job applicants from localStorage or use empty array if none exist
-    const allApplicantsData = JSON.parse(localStorage.getItem('jobApplicants') || '[]');
-    const jobApplicants = allApplicantsData.filter(applicant => {
-      const job = employerJobs.find(job => job.id === applicant.jobId);
-      return job !== undefined;
-    });
-
-    // Get pending timesheets
-    const allTimesheetsData = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    const pendingTimesheets = allTimesheetsData.filter(timesheet => 
-      timesheet.status === 'Pending' && 
-      employerJobs.some(job => job.id === timesheet.jobId)
-    );
-
-    // Calculate new metrics
-    // 1. Calculate average salary from job postings
-    const salaries = employerJobs.map(job => {
-      const salaryString = job.salary || '';
-      const salaryMatch = salaryString.match(/\$([0-9,]+)\s*-\s*\$([0-9,]+)/);
-      if (salaryMatch) {
-        const min = parseInt(salaryMatch[1].replace(/,/g, ''));
-        const max = parseInt(salaryMatch[2].replace(/,/g, ''));
-        return (min + max) / 2;
-      }
-      return 0;
-    });
+    // Load job applications
+    const allApplications = getJobApplications();
+    setApplications(allApplications);
     
-    const averageSalary = salaries.length > 0 
-      ? salaries.reduce((sum, salary) => sum + salary, 0) / salaries.length 
-      : 0;
+    // Filter applications by status
+    setPendingApplications(allApplications.filter(app => app.status === 'pending'));
+    setApprovedApplications(allApplications.filter(app => app.status === 'approved'));
+    setRejectedApplications(allApplications.filter(app => app.status === 'rejected'));
+  }, []);
 
-    // 2. Calculate application conversion rate (applicants per job)
-    const applicationConversionRate = employerJobs.length > 0 
-      ? jobApplicants.length / employerJobs.length 
-      : 0;
-
-    // 3. Calculate approval rate
-    const approvedApplicants = jobApplicants.filter(app => app.status === 'approved');
-    const approvalRate = jobApplicants.length > 0 
-      ? (approvedApplicants.length / jobApplicants.length) * 100 
-      : 0;
-
-    // 4. Calculate average time to hire (in days)
-    let totalHireDays = 0;
-    let hireCount = 0;
-    
-    approvedApplicants.forEach(app => {
-      if (app.appliedDate && app.approvedDate) {
-        const appliedDate = new Date(app.appliedDate);
-        const approvedDate = new Date(app.approvedDate);
-        const daysDiff = (approvedDate - appliedDate) / (1000 * 60 * 60 * 24);
-        totalHireDays += daysDiff;
-        hireCount++;
-      }
-    });
-    
-    const averageTimeToHire = hireCount > 0 ? totalHireDays / hireCount : 0;
-
-    // 5. Calculate total revenue (estimated from approved applicants and average salary)
-    const totalRevenue1 = approvedApplicants.length * averageSalary * 0.15; // Assuming 15% placement fee
-
-    // Update stats
-    setStats({
-      postedJobs: employerJobs.length,
-      activeJobs: employerJobs.filter(job => job.status === 'active').length,
-      totalApplicants: jobApplicants.length,
-      pendingApprovals: jobApplicants.filter(app => app.status === 'pending').length,
-      pendingTimesheets: pendingTimesheets.length,
-      // New metrics
-      totalRevenue: totalRevenue1,
-      averageSalary,
-      applicationConversionRate,
-      approvalRate,
-      averageTimeToHire
-    });
-
-    // Set recent jobs (up to 3)
-    setRecentJobs(employerJobs.slice(0, 3));
-
-    // Set recent applicants (up to 5)
-    setRecentApplicants(jobApplicants.slice(0, 5));
-    
-    // Set data for modals
-    setAllJobs(employerJobs);
-    setActiveJobsList(employerJobs.filter(job => job.status === 'active'));
-    setAllApplicants(jobApplicants);
-    setPendingApprovalsList(jobApplicants.filter(app => app.status === 'pending'));
-    setPendingTimesheetsList(pendingTimesheets);
-
-    // Calculate job performance data
-    const jobPerformance = employerJobs.map(job => {
-      const jobApplicantCount = jobApplicants.filter(app => app.jobId === job.id).length;
-      const jobApprovedCount = jobApplicants.filter(app => app.jobId === job.id && app.status === 'approved').length;
-      const conversionRate = jobApplicantCount > 0 ? (jobApprovedCount / jobApplicantCount) * 100 : 0;
-      
-      // Calculate days since posting
-      const postedDate = new Date(job.postedDate);
-      const currentDate = new Date();
-      const daysSincePosting = (currentDate - postedDate) / (1000 * 60 * 60 * 24);
-      
-      // Calculate applicants per day
-      const applicantsPerDay = daysSincePosting > 0 ? jobApplicantCount / daysSincePosting : 0;
-      
-      // Calculate performance score (weighted average of different metrics)
-      const performanceScore = (
-        (conversionRate * 0.4) + 
-        (applicantsPerDay * 10 * 0.4) + 
-        (jobApprovedCount * 5 * 0.2)
+  const handleApprove = (applicationId) => {
+    const result = approveJobApplication(applicationId);
+    if (result.success) {
+      // Update application lists
+      const updatedApplications = applications.map(app => 
+        app.id === applicationId ? { ...app, status: 'approved', approved: true } : app
       );
+      setApplications(updatedApplications);
+      setPendingApplications(updatedApplications.filter(app => app.status === 'pending'));
+      setApprovedApplications(updatedApplications.filter(app => app.status === 'approved'));
       
-      return {
-        ...job,
-        applicantCount: jobApplicantCount,
-        approvedCount: jobApprovedCount,
-        conversionRate,
-        applicantsPerDay,
-        performanceScore: Math.round(performanceScore * 10) / 10
-      };
-    });
-    
-    // Sort by performance score
-    const sortedPerformance = [...jobPerformance].sort((a, b) => b.performanceScore - a.performanceScore);
-    setJobPerformanceData(jobPerformance);
-    setTopPerformingJobs(sortedPerformance.slice(0, 3));
-
-    // Calculate financial data
-    const jobRevenues = employerJobs.map(job => {
-      const jobApprovedCount = jobApplicants.filter(app => app.jobId === job.id && app.status === 'approved').length;
-      
-      // Extract salary range
-      const salaryString = job.salary || '';
-      const salaryMatch = salaryString.match(/\$([0-9,]+)\s*-\s*\$([0-9,]+)/);
-      let avgSalary = 0;
-      
-      if (salaryMatch) {
-        const min = parseInt(salaryMatch[1].replace(/,/g, ''));
-        const max = parseInt(salaryMatch[2].replace(/,/g, ''));
-        avgSalary = (min + max) / 2;
-      }
-      
-      // Calculate revenue (15% of salary for each approved applicant)
-      const revenue = jobApprovedCount * avgSalary * 0.15;
-      
-      // Calculate cost (fixed cost per job posting + variable cost per applicant)
-      const fixedCost = 500; // Assuming $500 per job posting
-      const variableCost = jobApplicants.filter(app => app.jobId === job.id).length * 50; // Assuming $50 per applicant
-      const totalCost = fixedCost + variableCost;
-      
-      // Calculate profit
-      const profit = revenue - totalCost;
-      
-      return {
-        jobId: job.id,
-        jobTitle: job.title,
-        revenue,
-        cost: totalCost,
-        profit,
-        roi: totalCost > 0 ? (profit / totalCost) * 100 : 0
-      };
-    });
-    
-    // Calculate totals
-    const totalRevenue = jobRevenues.reduce((sum, job) => sum + job.revenue, 0);
-    const totalCost = jobRevenues.reduce((sum, job) => sum + job.cost, 0);
-    const totalProfit = totalRevenue - totalCost;
-    
-    setFinancialData({
-      totalRevenue,
-      totalCost,
-      profit: totalProfit,
-      revenueByJob: jobRevenues
-    });
-  }, [timeFilter]);
-
-  const handlePostNewJob = () => {
-    navigate('/employer-job-posting');
+      alert('Application approved successfully. The job seeker can now submit timesheets.');
+    }
   };
 
-  const handleManageJobs = () => {
-    navigate('/employer-job-management');
+  const handleReject = (applicationId) => {
+    const result = rejectJobApplication(applicationId);
+    if (result.success) {
+      // Update application lists
+      const updatedApplications = applications.map(app => 
+        app.id === applicationId ? { ...app, status: 'rejected', approved: false } : app
+      );
+      setApplications(updatedApplications);
+      setPendingApplications(updatedApplications.filter(app => app.status === 'pending'));
+      setRejectedApplications(updatedApplications.filter(app => app.status === 'rejected'));
+    }
   };
 
-  const handleViewApplicants = () => {
-    navigate('/employer-job-management');
+  const handleLogoUpload = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const logoData = reader.result;
+      setCompanyLogo(logoData);
+      localStorage.setItem('companyLogo', logoData);
+    };
+    if (file) {
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleTimesheetApproval = () => {
-    navigate('/timesheet/approval');
+  const handleEditProfile = () => {
+    setEditingProfile(true);
+  };
+
+  const handleSaveProfile = () => {
+    // Save user profile
+    saveUserProfile(editedProfile);
+    setUserProfile(editedProfile);
+    setEditingProfile(false);
+  };
+
+  const handleEditCompany = () => {
+    setEditingCompany(true);
+  };
+
+  const handleSaveCompany = () => {
+    // Save company info
+    setCompanyInfo(editedCompany);
+    localStorage.setItem('companyInfo', JSON.stringify(editedCompany));
+    setEditingCompany(false);
+  };
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setEditedProfile(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCompanyChange = (e) => {
+    const { name, value } = e.target;
+    setEditedCompany(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleLogout = () => {
     // Clear user data from localStorage
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userFirstName');
+    localStorage.removeItem('userLastName');
+    localStorage.removeItem('userAbout');
     
     // Redirect to login page
-    navigate('/login');
-  };
-  
-  // Modal handlers
-  const openModal = (modalType) => {
-    setActiveModal(modalType);
-  };
-  
-  const closeModal = () => {
-    setActiveModal(null);
-  };
-  
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString();
-  };
-
-  // Format currency for display
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  // Handle time filter change
-  const handleTimeFilterChange = (e) => {
-    setTimeFilter(e.target.value);
-  };
-
-  // Handle sort change
-  const handleSortChange = (e) => {
-    setSortBy(e.target.value);
+    navigate('/employer-login');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="container mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="Resume Logo" className="h-15 w-12" />
+          <h1 className="text-3xl font-bold">Employer Dashboard</h1>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 border-red-500 text-red-500 hover:bg-red-50"
+            onClick={handleLogout}
+          >
+            <FaSignOutAlt /> Logout
+          </Button>
+        </div>
+        
+        {/* Employer and Company Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="bg-blue-100 p-4 rounded-full mr-4">
+                    <FaUserTie className="text-blue-600 text-2xl" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Employer Details</h2>
+                </div>
+                {!editingProfile ? (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-blue-500 hover:text-blue-700"
+                    onClick={handleEditProfile}
+                  >
+                    <FaEdit className="mr-1" /> Edit
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-green-500 hover:text-green-700"
+                    onClick={handleSaveProfile}
+                  >
+                    <FaSave className="mr-1" /> Save
+                  </Button>
+                )}
+              </div>
+              
+              {!editingProfile ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="text-gray-600 font-medium">Name:</p>
+                  <p>{userProfile.firstName} {userProfile.lastName}</p>
+                  
+                  <p className="text-gray-600 font-medium">Email:</p>
+                  <p>{userProfile.email}</p>
+                  
+                  <p className="text-gray-600 font-medium">Role:</p>
+                  <p>HR Manager</p>
+                  
+                  <p className="text-gray-600 font-medium">About:</p>
+                  <p className="col-span-2 mt-2">{userProfile.about}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">First Name</label>
+                      <Input 
+                        name="firstName"
+                        value={editedProfile.firstName}
+                        onChange={handleProfileChange}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">Last Name</label>
+                      <Input 
+                        name="lastName"
+                        value={editedProfile.lastName}
+                        onChange={handleProfileChange}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600 font-medium">Email</label>
+                    <Input 
+                      name="email"
+                      value={editedProfile.email}
+                      onChange={handleProfileChange}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600 font-medium">About</label>
+                    <Textarea 
+                      name="about"
+                      value={editedProfile.about}
+                      onChange={handleProfileChange}
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <div className="bg-green-100 p-4 rounded-full mr-4">
+                    <FaBuilding className="text-green-600 text-2xl" />
+                  </div>
+                  <h2 className="text-xl font-semibold">Company Details</h2>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                      {companyLogo ? (
+                        <img src={companyLogo} alt="Company Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={logo} alt="Default Logo" className="w-10 h-10" />
+                      )}
+                    </div>
+                    <label htmlFor="company-logo" className="absolute bottom-0 right-0 bg-blue-500 p-1 rounded-full cursor-pointer hover:bg-blue-600">
+                      <FaCamera className="text-white text-xs" />
+                      <input
+                        type="file"
+                        id="company-logo"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                      />
+                    </label>
+                  </div>
+                  {!editingCompany ? (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-blue-500 hover:text-blue-700"
+                      onClick={handleEditCompany}
+                    >
+                      <FaEdit className="mr-1" /> Edit
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-green-500 hover:text-green-700"
+                      onClick={handleSaveCompany}
+                    >
+                      <FaSave className="mr-1" /> Save
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              {!editingCompany ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="text-gray-600 font-medium">Company Name:</p>
+                  <p>{companyInfo.name}</p>
+                  
+                  <p className="text-gray-600 font-medium">Industry:</p>
+                  <p>{companyInfo.industry}</p>
+                  
+                  <p className="text-gray-600 font-medium">Location:</p>
+                  <p>{companyInfo.location}</p>
+                  
+                  <p className="text-gray-600 font-medium">Employees:</p>
+                  <p>{companyInfo.employees}</p>
+                  
+                  <p className="text-gray-600 font-medium">Founded:</p>
+                  <p>{companyInfo.founded}</p>
+                  
+                  <p className="text-gray-600 font-medium col-span-2 mt-2">About Company:</p>
+                  <p className="col-span-2 text-sm">{companyInfo.about}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-gray-600 font-medium">Company Name</label>
+                    <Input 
+                      name="name"
+                      value={editedCompany.name}
+                      onChange={handleCompanyChange}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">Industry</label>
+                      <Input 
+                        name="industry"
+                        value={editedCompany.industry}
+                        onChange={handleCompanyChange}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">Location</label>
+                      <Input 
+                        name="location"
+                        value={editedCompany.location}
+                        onChange={handleCompanyChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">Employees</label>
+                      <Input 
+                        name="employees"
+                        value={editedCompany.employees}
+                        onChange={handleCompanyChange}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600 font-medium">Founded</label>
+                      <Input 
+                        name="founded"
+                        value={editedCompany.founded}
+                        onChange={handleCompanyChange}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-600 font-medium">About Company</label>
+                    <Textarea 
+                      name="about"
+                      value={editedCompany.about}
+                      onChange={handleCompanyChange}
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Dashboard Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6 flex items-center">
+              <div className="bg-blue-100 p-4 rounded-full mr-4">
+                <FaUsers className="text-blue-600 text-2xl" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Total Applications</p>
+                <h3 className="text-2xl font-bold">{applications.length}</h3>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6 flex items-center">
+              <div className="bg-green-100 p-4 rounded-full mr-4">
+                <FaCheck className="text-green-600 text-2xl" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Approved</p>
+                <h3 className="text-2xl font-bold">{approvedApplications.length}</h3>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-6 flex items-center">
+              <div className="bg-yellow-100 p-4 rounded-full mr-4">
+                <FaClipboardList className="text-yellow-600 text-2xl" />
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">Pending</p>
+                <h3 className="text-2xl font-bold">{pendingApplications.length}</h3>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Quick Access Buttons */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Button 
+            onClick={() => navigate('/employer-job-management')}
+            className="bg-blue-500 hover:bg-blue-600 h-auto py-4"
+          >
+            <FaBuilding className="mr-2 text-xl" /> 
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Employer Dashboard</h1>
-              <p className="text-gray-600">Manage your jobs, applicants, and timesheets</p>
+              <div className="font-semibold">Manage Jobs</div>
+              <div className="text-xs opacity-80">Post and edit job listings</div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="flex items-center gap-2">
-              <label htmlFor="timeFilter" className="text-sm font-medium text-gray-700">Time Period:</label>
-              <select 
-                id="timeFilter" 
-                value={timeFilter} 
-                onChange={handleTimeFilterChange}
-                className="rounded-md border-gray-300 shadow-sm text-sm"
-              >
-                <option value="all">All Time</option>
-                <option value="week">Last Week</option>
-                <option value="month">Last Month</option>
-                <option value="quarter">Last Quarter</option>
-                <option value="year">Last Year</option>
-              </select>
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/timesheet/approval')}
+            className="bg-green-500 hover:bg-green-600 h-auto py-4"
+          >
+            <FaRegClock className="mr-2 text-xl" /> 
+            <div>
+              <div className="font-semibold">Timesheet Approval</div>
+              <div className="text-xs opacity-80">Review and approve timesheets</div>
             </div>
-            <Button 
-              onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
-            >
-              <LogOut size={16} />
-              Logout
-            </Button>
-            <Button 
-              onClick={handlePostNewJob}
-              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-            >
-              <Plus size={16} />
-              Post New Job
-            </Button>
-          </div>
+          </Button>
+          
+          <Button 
+            onClick={() => navigate('/employer-job-applicants/all')}
+            className="bg-purple-500 hover:bg-purple-600 h-auto py-4"
+          >
+            <FaUsers className="mr-2 text-xl" /> 
+            <div>
+              <div className="font-semibold">View All Applicants</div>
+              <div className="text-xs opacity-80">Review all job applications</div>
+            </div>
+          </Button>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-blue-50"
-            onClick={() => openModal('postedJobs')}
-          >
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <Briefcase className="h-8 w-8 text-blue-500 mb-2" />
-              <p className="text-sm text-gray-500">Posted Jobs</p>
-              <h3 className="text-2xl font-bold">{stats.postedJobs}</h3>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-green-50"
-            onClick={() => openModal('activeJobs')}
-          >
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <Briefcase className="h-8 w-8 text-green-500 mb-2" />
-              <p className="text-sm text-gray-500">Active Jobs</p>
-              <h3 className="text-2xl font-bold">{stats.activeJobs}</h3>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-purple-50"
-            onClick={() => openModal('totalApplicants')}
-          >
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <Users className="h-8 w-8 text-purple-500 mb-2" />
-              <p className="text-sm text-gray-500">Total Applicants</p>
-              <h3 className="text-2xl font-bold">{stats.totalApplicants}</h3>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-yellow-50"
-            onClick={() => openModal('pendingApprovals')}
-          >
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <CheckCircle className="h-8 w-8 text-yellow-500 mb-2" />
-              <p className="text-sm text-gray-500">Pending Approvals</p>
-              <h3 className="text-2xl font-bold">{stats.pendingApprovals}</h3>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className="hover:shadow-md transition-shadow cursor-pointer hover:bg-red-50"
-            onClick={() => openModal('pendingTimesheets')}
-          >
-            <CardContent className="p-4 flex flex-col items-center justify-center">
-              <Clock className="h-8 w-8 text-red-500 mb-2" />
-              <p className="text-sm text-gray-500">Pending Timesheets</p>
-              <h3 className="text-2xl font-bold">{stats.pendingTimesheets}</h3>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* New Performance Metrics */}
+        
+        {/* Pending Applications */}
+        <h2 className="text-xl font-semibold mb-4">Pending Applications</h2>
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Performance Metrics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="hover:shadow-md transition-shadow hover:bg-indigo-50">
-              <CardContent className="p-4 flex flex-col items-center justify-center">
-                <Percent className="h-8 w-8 text-indigo-500 mb-2" />
-                <p className="text-sm text-gray-500">Approval Rate</p>
-                <h3 className="text-2xl font-bold">{stats.approvalRate.toFixed(1)}%</h3>
-                <p className="text-xs text-gray-500">of applicants approved</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow hover:bg-teal-50">
-              <CardContent className="p-4 flex flex-col items-center justify-center">
-                <Users className="h-8 w-8 text-teal-500 mb-2" />
-                <p className="text-sm text-gray-500">Conversion Rate</p>
-                <h3 className="text-2xl font-bold">{stats.applicationConversionRate.toFixed(1)}</h3>
-                <p className="text-xs text-gray-500">applicants per job</p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow hover:bg-amber-50">
-              <CardContent className="p-4 flex flex-col items-center justify-center">
-                <Clock className="h-8 w-8 text-amber-500 mb-2" />
-                <p className="text-sm text-gray-500">Time to Hire</p>
-                <h3 className="text-2xl font-bold">{stats.averageTimeToHire.toFixed(1)}</h3>
-                <p className="text-xs text-gray-500">days average</p>
-              </CardContent>
-            </Card>
-
-            <Card 
-              className="hover:shadow-md transition-shadow cursor-pointer hover:bg-emerald-50"
-              onClick={() => openModal('financialInsights')}
-            >
-              <CardContent className="p-4 flex flex-col items-center justify-center">
-                <DollarSign className="h-8 w-8 text-emerald-500 mb-2" />
-                <p className="text-sm text-gray-500">Est. Revenue</p>
-                <h3 className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</h3>
-                <p className="text-xs text-gray-500">from placements</p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleManageJobs}>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-blue-100 p-3 rounded-full">
-                <Briefcase className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Manage Jobs</h3>
-                <p className="text-sm text-gray-500">View, edit, and delete your job postings</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleViewApplicants}>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-purple-100 p-3 rounded-full">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">View Applicants</h3>
-                <p className="text-sm text-gray-500">Review and manage job applications</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleTimesheetApproval}>
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className="bg-green-100 p-3 rounded-full">
-                <Clock className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Timesheet Approval</h3>
-                <p className="text-sm text-gray-500">Review and approve employee timesheets</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Top Performing Jobs */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Top Performing Jobs</h2>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => openModal('jobPerformance')}
-              className="flex items-center gap-1"
-            >
-              <BarChart className="h-4 w-4" />
-              View All
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {topPerformingJobs.length > 0 ? (
-              topPerformingJobs.map((job) => (
-                <Card key={job.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-lg">{job.title}</h3>
-                      <Badge className="bg-blue-100 text-blue-800">
-                        Score: {job.performanceScore}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-gray-500 mb-3 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {job.location}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex flex-col">
-                        <span className="text-gray-500">Applicants</span>
-                        <span className="font-medium">{job.applicantCount}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-gray-500">Conversion</span>
-                        <span className="font-medium">{job.conversionRate.toFixed(1)}%</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-gray-500">Daily Rate</span>
-                        <span className="font-medium">{job.applicantsPerDay.toFixed(1)}/day</span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-gray-500">Hired</span>
-                        <span className="font-medium">{job.approvedCount}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+          <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+            {pendingApplications.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-500">
+                  No pending applications
+                </CardContent>
+              </Card>
             ) : (
-              <div className="col-span-3 text-center py-8 bg-gray-50 rounded-lg">
-                <Award className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                <p className="text-gray-500">No job performance data available yet</p>
+              <div className="space-y-4 p-4">
+                {pendingApplications.map(application => (
+                  <Card key={application.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-lg">{application.jobTitle}</h3>
+                          <p className="text-gray-600">{application.companyName}</p>
+                          <p className="text-gray-500 text-sm">Applicant: {application.userEmail}</p>
+                          <p className="text-gray-500 text-sm">Applied: {new Date(application.appliedDate).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            onClick={() => handleApprove(application.id)}
+                            className="bg-green-500 hover:bg-green-600"
+                          >
+                            <FaCheck className="mr-2" /> Approve
+                          </Button>
+                          <Button 
+                            onClick={() => handleReject(application.id)}
+                            variant="outline"
+                            className="border-red-500 text-red-500 hover:bg-red-50"
+                          >
+                            <FaTimes className="mr-2" /> Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </div>
         </div>
-
-        {/* Recent Jobs and Applicants */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Jobs */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Job Postings</CardTitle>
-              <CardDescription>Your most recently posted jobs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {recentJobs.length > 0 ? (
-                <div className="space-y-4">
-                  {recentJobs.map((job) => (
-                    <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{job.title}</h4>
-                        <p className="text-sm text-gray-500">
-                          Posted: {new Date(job.postedDate).toLocaleDateString()}
-                        </p>
+        
+        {/* Approved Applications */}
+        <h2 className="text-xl font-semibold mb-4">Approved Applications</h2>
+        <div className="mb-8">
+          <div className="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+            {approvedApplications.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-500">
+                  No approved applications
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4 p-4">
+                {approvedApplications.map(application => (
+                  <Card key={application.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold text-lg">{application.jobTitle}</h3>
+                          <p className="text-gray-600">{application.companyName}</p>
+                          <p className="text-gray-500 text-sm">Applicant: {application.userEmail}</p>
+                          <p className="text-gray-500 text-sm">Approved: {new Date(application.approvedDate).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                            Approved
+                          </div>
+                          <Button 
+                            onClick={() => navigate(`/timesheet/approval?user=${application.userEmail}`)}
+                            className="bg-blue-500 hover:bg-blue-600"
+                          >
+                            <FaFileAlt className="mr-2" /> View Timesheets
+                          </Button>
+                        </div>
                       </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${
-                        job.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        job.status === 'closed' ? 'bg-red-100 text-red-800' : 
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {job.status === 'active' ? 'Active' : 
-                         job.status === 'closed' ? 'Closed' : 
-                         'Draft'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-gray-500">
-                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                  <p>No jobs posted yet</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-2"
-                    onClick={handlePostNewJob}
-                  >
-                    Post Your First Job
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Applicants */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Applicants</CardTitle>
-              <CardDescription>Latest applications to your job postings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {recentApplicants.length > 0 ? (
-                <div className="space-y-4">
-                  {recentApplicants.map((applicant) => (
-                    <div key={applicant.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{applicant.name}</h4>
-                        <p className="text-sm text-gray-500">
-                          Applied for: {applicant.jobTitle}
-                        </p>
-                      </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${
-                        applicant.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                        applicant.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {applicant.status === 'approved' ? 'Approved' : 
-                         applicant.status === 'rejected' ? 'Rejected' : 
-                         'Pending'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                  <p>No applicants yet</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        {/* Modal for Posted Jobs */}
-        {activeModal === 'postedJobs' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Posted Jobs</CardTitle>
-                    <CardDescription>All jobs you have posted</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {allJobs.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Job Title</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Posted Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Applicants</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {allJobs.map((job) => (
-                          <TableRow key={job.id}>
-                            <TableCell className="font-medium">{job.title}</TableCell>
-                            <TableCell>{job.location}</TableCell>
-                            <TableCell>{formatDate(job.postedDate)}</TableCell>
-                            <TableCell>
-                              <Badge 
-                                className={
-                                  job.status === 'active' ? 'bg-green-100 text-green-800' :
-                                  job.status === 'closed' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }
-                              >
-                                {job.status === 'active' ? 'Active' : 
-                                 job.status === 'closed' ? 'Closed' : 
-                                 'Draft'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {allApplicants.filter(app => app.jobId === job.id).length}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No jobs posted yet</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-2"
-                        onClick={() => {
-                          closeModal();
-                          handlePostNewJob();
-                        }}
-                      >
-                        Post Your First Job
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-        
-        {/* Modal for Active Jobs */}
-        {activeModal === 'activeJobs' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Active Jobs</CardTitle>
-                    <CardDescription>Currently active job postings</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {activeJobsList.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Job Title</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Posted Date</TableHead>
-                          <TableHead>Deadline</TableHead>
-                          <TableHead>Applicants</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {activeJobsList.map((job) => (
-                          <TableRow key={job.id}>
-                            <TableCell className="font-medium">{job.title}</TableCell>
-                            <TableCell>{job.location}</TableCell>
-                            <TableCell>{formatDate(job.postedDate)}</TableCell>
-                            <TableCell>{formatDate(job.applicationDeadline)}</TableCell>
-                            <TableCell>
-                              {allApplicants.filter(app => app.jobId === job.id).length}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No active jobs found</p>
-                      <Button 
-                        variant="outline" 
-                        className="mt-2"
-                        onClick={() => {
-                          closeModal();
-                          handlePostNewJob();
-                        }}
-                      >
-                        Post a New Job
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-        
-        {/* Modal for Total Applicants */}
-        {activeModal === 'totalApplicants' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>All Applicants</CardTitle>
-                    <CardDescription>All applicants for your job postings</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {allApplicants.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Applied For</TableHead>
-                          <TableHead>Applied Date</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {allApplicants.map((applicant) => (
-                          <TableRow key={applicant.id}>
-                            <TableCell className="font-medium">{applicant.name}</TableCell>
-                            <TableCell>{applicant.email}</TableCell>
-                            <TableCell>{applicant.jobTitle}</TableCell>
-                            <TableCell>{formatDate(applicant.appliedDate)}</TableCell>
-                            <TableCell>
-                              <Badge 
-                                className={
-                                  applicant.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                  applicant.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }
-                              >
-                                {applicant.status === 'approved' ? 'Approved' : 
-                                 applicant.status === 'rejected' ? 'Rejected' : 
-                                 'Pending'}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No applicants yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-        
-        {/* Modal for Pending Approvals */}
-        {activeModal === 'pendingApprovals' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Pending Approvals</CardTitle>
-                    <CardDescription>Applicants waiting for your approval</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {pendingApprovalsList.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Applied For</TableHead>
-                          <TableHead>Applied Date</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingApprovalsList.map((applicant) => (
-                          <TableRow key={applicant.id}>
-                            <TableCell className="font-medium">{applicant.name}</TableCell>
-                            <TableCell>{applicant.email}</TableCell>
-                            <TableCell>{applicant.jobTitle}</TableCell>
-                            <TableCell>{formatDate(applicant.appliedDate)}</TableCell>
-                            <TableCell>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  closeModal();
-                                  navigate(`/employer-job-applicants/${applicant.jobId}`);
-                                }}
-                              >
-                                <Eye className="h-3 w-3 mr-1" />
-                                Review
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <CheckCircle className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No pending approvals</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-        
-        {/* Modal for Pending Timesheets */}
-        {activeModal === 'pendingTimesheets' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Pending Timesheets</CardTitle>
-                    <CardDescription>Timesheets waiting for your approval</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {pendingTimesheetsList.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Week Ending</TableHead>
-                          <TableHead>Total Hours</TableHead>
-                          <TableHead>Department</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingTimesheetsList.map((timesheet) => (
-                          <TableRow key={timesheet.id}>
-                            <TableCell className="font-medium">{timesheet.studentName}</TableCell>
-                            <TableCell>{timesheet.weekEnding}</TableCell>
-                            <TableCell>{timesheet.totalHours}</TableCell>
-                            <TableCell>{timesheet.department}</TableCell>
-                            <TableCell>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  closeModal();
-                                  handleTimesheetApproval();
-                                }}
-                              >
-                                <Eye className="h-3 w-3 mr-1" />
-                                Review
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <Clock className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No pending timesheets</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {/* Modal for Job Performance */}
-        {activeModal === 'jobPerformance' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-5xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Job Performance Analysis</CardTitle>
-                    <CardDescription>Detailed performance metrics for all your job postings</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <label htmlFor="sortBy" className="text-sm font-medium text-gray-700">Sort by:</label>
-                      <select 
-                        id="sortBy" 
-                        value={sortBy} 
-                        onChange={handleSortChange}
-                        className="rounded-md border-gray-300 shadow-sm text-sm"
-                      >
-                        <option value="performance">Performance Score</option>
-                        <option value="applicants">Applicant Count</option>
-                        <option value="conversion">Conversion Rate</option>
-                        <option value="recent">Recently Posted</option>
-                      </select>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      <span className="font-medium">Performance Score</span> is calculated based on applicant count, conversion rate, and daily application rate
-                    </div>
-                  </div>
-                  
-                  {jobPerformanceData.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Job Title</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Applicants</TableHead>
-                          <TableHead>Conversion Rate</TableHead>
-                          <TableHead>Daily Rate</TableHead>
-                          <TableHead>Performance Score</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {jobPerformanceData
-                          .sort((a, b) => {
-                            if (sortBy === 'performance') return b.performanceScore - a.performanceScore;
-                            if (sortBy === 'applicants') return b.applicantCount - a.applicantCount;
-                            if (sortBy === 'conversion') return b.conversionRate - a.conversionRate;
-                            // Default to recent
-                            return new Date(b.postedDate) - new Date(a.postedDate);
-                          })
-                          .map((job) => (
-                            <TableRow key={job.id}>
-                              <TableCell className="font-medium">{job.title}</TableCell>
-                              <TableCell>{job.location}</TableCell>
-                              <TableCell>{job.applicantCount} ({job.approvedCount} hired)</TableCell>
-                              <TableCell>{job.conversionRate.toFixed(1)}%</TableCell>
-                              <TableCell>{job.applicantsPerDay.toFixed(2)}/day</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  className={
-                                    job.performanceScore > 20 ? 'bg-green-100 text-green-800' :
-                                    job.performanceScore > 10 ? 'bg-blue-100 text-blue-800' :
-                                    'bg-gray-100 text-gray-800'
-                                  }
-                                >
-                                  {job.performanceScore}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <BarChart className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No job performance data available yet</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {/* Modal for Financial Insights */}
-        {activeModal === 'financialInsights' && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-            <div className="bg-white rounded-lg w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>Financial Insights</CardTitle>
-                    <CardDescription>Revenue, costs, and profit analysis for your job postings</CardDescription>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={closeModal}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card className="bg-blue-50">
-                      <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <DollarSign className="h-8 w-8 text-blue-500 mb-2" />
-                        <p className="text-sm text-gray-500">Total Revenue</p>
-                        <h3 className="text-2xl font-bold">{formatCurrency(financialData.totalRevenue)}</h3>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-red-50">
-                      <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <CreditCard className="h-8 w-8 text-red-500 mb-2" />
-                        <p className="text-sm text-gray-500">Total Cost</p>
-                        <h3 className="text-2xl font-bold">{formatCurrency(financialData.totalCost)}</h3>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-green-50">
-                      <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <TrendingUp className="h-8 w-8 text-green-500 mb-2" />
-                        <p className="text-sm text-gray-500">Net Profit</p>
-                        <h3 className="text-2xl font-bold">{formatCurrency(financialData.profit)}</h3>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  <h3 className="text-lg font-semibold mb-3">Revenue by Job</h3>
-                  
-                  {financialData.revenueByJob.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Job Title</TableHead>
-                          <TableHead>Revenue</TableHead>
-                          <TableHead>Cost</TableHead>
-                          <TableHead>Profit</TableHead>
-                          <TableHead>ROI</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {financialData.revenueByJob
-                          .sort((a, b) => b.profit - a.profit)
-                          .map((job) => (
-                            <TableRow key={job.jobId}>
-                              <TableCell className="font-medium">{job.jobTitle}</TableCell>
-                              <TableCell>{formatCurrency(job.revenue)}</TableCell>
-                              <TableCell>{formatCurrency(job.cost)}</TableCell>
-                              <TableCell className={job.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                {formatCurrency(job.profit)}
-                              </TableCell>
-                              <TableCell>
-                                <Badge 
-                                  className={
-                                    job.roi > 50 ? 'bg-green-100 text-green-800' :
-                                    job.roi > 0 ? 'bg-blue-100 text-blue-800' :
-                                    'bg-red-100 text-red-800'
-                                  }
-                                >
-                                  {job.roi.toFixed(1)}%
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-gray-500">
-                      <DollarSign className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                      <p>No financial data available yet</p>
-                    </div>
-                  )}
-                  
-                  <div className="mt-4 p-4 bg-yellow-50 rounded-md text-sm text-yellow-800">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium mb-1">Note about financial calculations:</p>
-                        <p>Revenue is estimated based on a 15% placement fee of the average salary for each hired applicant. Costs include a fixed cost per job posting ($500) and a variable cost per applicant ($50). These are estimates and may not reflect actual financial performance.</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
-}
+};
+
+export default EmployerDashboard;

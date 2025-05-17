@@ -1,273 +1,189 @@
-// components/TimeSheetApproval.jsx
-import { useState, useEffect } from "react";
-import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./ui/table";
-import { Input } from "./ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Badge } from "./ui/badge";
-import { Search } from "lucide-react";
-import PaymentProcessing from "./PaymentProcessing";
-import { initializeSampleData } from "../data/sampleData";
-import { getFormattedTimesheets, updateTimesheetInLocalStorage } from "../lib/timesheetUtils";
-import { useNotification } from "../context/NotificationContext";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { FaCheck, FaTimes, FaFileInvoiceDollar, FaArrowLeft, FaSignOutAlt } from 'react-icons/fa';
+import { getTimesheets, approveTimesheet, rejectTimesheet, generatePaycheck } from '../services/timesheetService';
 
 const TimeSheetApproval = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateRange, setDateRange] = useState({ from: "", to: "" });
-  const [showPayment, setShowPayment] = useState(false);
-  const [selectedTimesheet, setSelectedTimesheet] = useState(null);
+  const navigate = useNavigate();
   const [timesheets, setTimesheets] = useState([]);
-  
-  // Get notification context
-  const { addTimesheetNotification } = useNotification();
+  const [pendingTimesheets, setPendingTimesheets] = useState([]);
+  const [approvedTimesheets, setApprovedTimesheets] = useState([]);
+  const [rejectedTimesheets, setRejectedTimesheets] = useState([]);
 
   useEffect(() => {
-    // Initialize sample data if it doesn't exist
-    initializeSampleData();
+    // Load timesheets
+    const allTimesheets = getTimesheets();
+    setTimesheets(allTimesheets);
     
-    // Get formatted timesheets using the utility function
-    const formattedTimesheets = getFormattedTimesheets();
-    
-    setTimesheets(formattedTimesheets);
+    // Filter timesheets by status
+    setPendingTimesheets(allTimesheets.filter(ts => ts.status === 'pending'));
+    setApprovedTimesheets(allTimesheets.filter(ts => ts.status === 'approved'));
+    setRejectedTimesheets(allTimesheets.filter(ts => ts.status === 'rejected'));
   }, []);
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      Pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      Approved: "bg-green-100 text-green-800 border-green-200",
-      Rejected: "bg-red-100 text-red-800 border-red-200",
-      "Under Review": "bg-blue-100 text-blue-800 border-blue-200",
-    };
-    return (
-      <Badge className={`rounded-md border px-2 py-0.5 text-xs font-medium ${statusMap[status] || "bg-gray-100"}`}>
-        {status}
-      </Badge>
-    );
+  const handleApprove = (timesheetId) => {
+    // Find the timesheet to approve
+    const timesheet = timesheets.find(ts => ts.id === timesheetId);
+    if (!timesheet) return;
+    
+    // Navigate to payment processing with the timesheet data
+    navigate(`/payment/process/${timesheetId}`, { state: { timesheet } });
   };
 
-  const handleApprove = (id) => {
-    const timesheet = timesheets.find((t) => t.id === id);
-    setSelectedTimesheet({
-      ...timesheet,
-      entries: [
-        {
-          date: timesheet.weekEnding,
-          hours: timesheet.totalHours,
-          task: "Regular Hours",
-          description: "Weekly work",
-        },
-      ],
-    });
-    setShowPayment(true);
-  };
-
-  const handleProcessPayment = (paymentDetails) => {
-    console.log("Processing payment:", paymentDetails);
-    
-    // Find the original timesheet in the stored timesheets
-    const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    const originalTimesheet = storedTimesheets.find(t => t.id === selectedTimesheet.id);
-    
-    if (originalTimesheet) {
-      // Update the status
-      originalTimesheet.status = "Approved";
+  const handleReject = (timesheetId) => {
+    const result = rejectTimesheet(timesheetId);
+    if (result.success) {
+      // Update timesheet lists
+      const updatedTimesheets = timesheets.map(ts => 
+        ts.id === timesheetId ? { ...ts, status: 'rejected', approved: false } : ts
+      );
+      setTimesheets(updatedTimesheets);
+      setPendingTimesheets(updatedTimesheets.filter(ts => ts.status === 'pending'));
+      setRejectedTimesheets(updatedTimesheets.filter(ts => ts.status === 'rejected'));
       
-      // Update in localStorage
-      localStorage.setItem('timesheets', JSON.stringify(storedTimesheets));
-      
-      // Also update the individual timesheet in localStorage
-      updateTimesheetInLocalStorage(originalTimesheet);
-      
-      // Add notification for timesheet approval
-      addTimesheetNotification('approved', originalTimesheet.date, originalTimesheet.id);
+      alert('Timesheet rejected.');
     }
-    
-    // Update the UI
-    setTimesheets(
-      timesheets.map((t) =>
-        t.id === selectedTimesheet.id ? { ...t, status: "Approved" } : t
-      )
-    );
-    
-    setShowPayment(false);
-    setSelectedTimesheet(null);
   };
 
-  const handleReject = (id) => {
-    // Find the original timesheet in the stored timesheets
-    const storedTimesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    const originalTimesheet = storedTimesheets.find(t => t.id === id);
+  const handleGeneratePaycheck = (timesheetId) => {
+    // Find the timesheet
+    const timesheet = timesheets.find(ts => ts.id === timesheetId);
+    if (!timesheet) return;
     
-    if (originalTimesheet) {
-      // Update the status
-      originalTimesheet.status = "Rejected";
-      
-      // Update in localStorage
-      localStorage.setItem('timesheets', JSON.stringify(storedTimesheets));
-      
-      // Also update the individual timesheet in localStorage
-      updateTimesheetInLocalStorage(originalTimesheet);
-      
-      // Add notification for timesheet rejection
-      addTimesheetNotification('rejected', originalTimesheet.date, originalTimesheet.id);
-    }
-    
-    // Update the UI
-    setTimesheets(
-      timesheets.map((t) =>
-        t.id === id ? { ...t, status: "Rejected" } : t
-      )
-    );
+    // Navigate to payment processing with the timesheet data
+    navigate(`/payment/process/${timesheetId}`, { state: { timesheet } });
   };
 
-  const handleViewDetails = (id) => {
-    console.log("View details:", id);
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
   };
 
-  const filteredTimesheets = timesheets.filter((t) => {
-    const matchesSearch =
-      t.studentName?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
-      t.studentId?.toLowerCase().includes(searchTerm?.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || t.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const calculateTotalHours = (entries) => {
+    if (!entries || !Array.isArray(entries)) return 0;
+    
+    return entries.reduce((total, entry) => {
+      if (!entry.hours) return total;
+      
+      const [hours, minutes] = entry.hours.split(':').map(Number);
+      return total + hours + (minutes / 60);
+    }, 0).toFixed(1);
+  };
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userEmail');
+    
+    // Redirect to login page
+    navigate('/employer-login');
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="container mx-auto px-4">
-        {showPayment ? (
-          <PaymentProcessing
-            timesheet={selectedTimesheet}
-            onClose={() => setShowPayment(false)}
-            onProcessPayment={handleProcessPayment}
-          />
-        ) : (
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl font-semibold">Timesheet Approvals</CardTitle>
-              <CardDescription>Review and manage student-submitted hours</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Filters */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by name or ID..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Approved">Approved</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
-                    <SelectItem value="Under Review">Under Review</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="date"
-                  value={dateRange.from}
-                  onChange={(e) =>
-                    setDateRange({ ...dateRange, from: e.target.value })
-                  }
-                />
-                <Input
-                  type="date"
-                  value={dateRange.to}
-                  onChange={(e) =>
-                    setDateRange({ ...dateRange, to: e.target.value })
-                  }
-                />
-              </div>
-
-              {/* Table */}
-              <div className="rounded-lg border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[120px]">Name</TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Week Ending</TableHead>
-                      <TableHead>Total Hours</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTimesheets.map((ts) => (
-                      <TableRow key={ts.id} className="hover:bg-muted/50">
-                        <TableCell>{ts.studentName}</TableCell>
-                        <TableCell>{ts.studentId}</TableCell>
-                        <TableCell>{ts.department}</TableCell>
-                        <TableCell>{ts.weekEnding}</TableCell>
-                        <TableCell>{ts.totalHours}</TableCell>
-                        <TableCell>{getStatusBadge(ts.status)}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewDetails(ts.id)}
-                            >
-                              View
-                            </Button>
-                            {ts.status === "Pending" && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => handleApprove(ts.id)}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleReject(ts.id)}
-                                >
-                                  Reject
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="container mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              className="mr-4"
+              onClick={() => navigate('/employer-dashboard')}
+            >
+              <FaArrowLeft className="mr-2" /> Back to Dashboard
+            </Button>
+            <h1 className="text-3xl font-bold">Timesheet Approval</h1>
+          </div>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 border-red-500 text-red-500 hover:bg-red-50"
+            onClick={handleLogout}
+          >
+            <FaSignOutAlt /> Logout
+          </Button>
+        </div>
+        
+        {/* Pending Timesheets */}
+        <h2 className="text-xl font-semibold mb-4">Pending Timesheets</h2>
+        {pendingTimesheets.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center text-gray-500">
+              No pending timesheets
             </CardContent>
           </Card>
+        ) : (
+          <div className="space-y-4 mb-8">
+            {pendingTimesheets.map(timesheet => (
+              <Card key={timesheet.id}>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-lg">{timesheet.jobTitle || 'Timesheet'}</h3>
+                      <p className="text-gray-600">Employee: {timesheet.userEmail || timesheet.userName}</p>
+                      <p className="text-gray-500 text-sm">Week: {formatDate(timesheet.weekStartDate)} - {formatDate(timesheet.weekEndDate)}</p>
+                      <p className="text-gray-500 text-sm">Total Hours: {calculateTotalHours(timesheet.entries)}</p>
+                      <p className="text-gray-500 text-sm">Submitted: {formatDate(timesheet.submittedDate)}</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={() => handleApprove(timesheet.id)}
+                        className="bg-green-500 hover:bg-green-600"
+                      >
+                        <FaCheck className="mr-2" /> Approve
+                      </Button>
+                      <Button 
+                        onClick={() => handleReject(timesheet.id)}
+                        variant="outline"
+                        className="border-red-500 text-red-500 hover:bg-red-50"
+                      >
+                        <FaTimes className="mr-2" /> Reject
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+        
+        {/* Approved Timesheets */}
+        <h2 className="text-xl font-semibold mb-4 mt-8">Approved Timesheets</h2>
+        {approvedTimesheets.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center text-gray-500">
+              No approved timesheets
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {approvedTimesheets.map(timesheet => (
+              <Card key={timesheet.id}>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold text-lg">{timesheet.jobTitle || 'Timesheet'}</h3>
+                      <p className="text-gray-600">Employee: {timesheet.userEmail || timesheet.userName}</p>
+                      <p className="text-gray-500 text-sm">Week: {formatDate(timesheet.weekStartDate)} - {formatDate(timesheet.weekEndDate)}</p>
+                      <p className="text-gray-500 text-sm">Total Hours: {calculateTotalHours(timesheet.entries)}</p>
+                      <p className="text-gray-500 text-sm">Approved: {formatDate(timesheet.approvedDate)}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                        Approved
+                      </div>
+                      <Button 
+                        onClick={() => handleGeneratePaycheck(timesheet.id)}
+                        className="bg-blue-500 hover:bg-blue-600"
+                      >
+                        <FaFileInvoiceDollar className="mr-2" /> Generate Paycheck
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>

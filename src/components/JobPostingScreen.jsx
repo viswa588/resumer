@@ -1,357 +1,206 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { ArrowLeft, Save } from "lucide-react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
+import { FaArrowLeft, FaSave } from 'react-icons/fa';
+import { createJob } from '../services/jobService';
+import { getUserProfile } from '../services/userService';
 
-export default function JobPostingPage() {
+const JobPostingScreen = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    title: "",
-    company: "",
-    location: "",
-    salary: "",
-    jobType: "",
-    description: "",
-    requirements: "",
-    applicationDeadline: "",
-    experienceLevel: "",
-    contactEmail: ""
+    title: '',
+    company: '',
+    location: '',
+    description: '',
+    requirements: '',
+    salary: ''
   });
-  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [employerEmail, setEmployerEmail] = useState("");
+  const [error, setError] = useState('');
 
-  // Get employer email from localStorage
-  useEffect(() => {
-    const email = localStorage.getItem('userEmail');
-    if (email) {
-      setEmployerEmail(email);
-      setFormData(prev => ({
-        ...prev,
-        contactEmail: email
-      }));
-    }
-  }, []);
-
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setFormData({
-      ...formData,
-      [id]: value
-    });
-    
-    // Clear error when user starts typing
-    if (errors[id]) {
-      setErrors({
-        ...errors,
-        [id]: ""
-      });
-    }
-  };
-
-  const handleSelectChange = (value, field) => {
-    setFormData({
-      ...formData,
-      [field]: value
-    });
-    
-    // Clear error when user selects a value
-    if (errors[field]) {
-      setErrors({
-        ...errors,
-        [field]: ""
-      });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!formData.title.trim()) newErrors.title = "Job title is required";
-    if (!formData.company.trim()) newErrors.company = "Company name is required";
-    if (!formData.location.trim()) newErrors.location = "Location is required";
-    if (!formData.jobType) newErrors.jobType = "Job type is required";
-    if (!formData.description.trim()) newErrors.description = "Description is required";
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
     
-    if (!validateForm()) {
+    // Validate form
+    if (!formData.title || !formData.company || !formData.location || !formData.description) {
+      setError('Please fill in all required fields');
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      // Create new job object
-      const newJob = {
-        id: Date.now(), // Use timestamp as unique ID
+      // Get employer email
+      const profile = getUserProfile();
+      const employerEmail = profile.email || localStorage.getItem('userEmail');
+      
+      if (!employerEmail) {
+        setError('User information not found. Please log in again.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Create job
+      const jobData = {
         ...formData,
-        employerEmail: employerEmail,
-        postedDate: new Date().toISOString(),
-        status: 'active'
+        employerEmail
       };
       
-      // Get existing jobs from localStorage
-      const allJobs = JSON.parse(localStorage.getItem('employerJobs') || '[]');
+      const newJob = createJob(jobData);
       
-      // Add new job
-      allJobs.push(newJob);
-      
-      // Save back to localStorage
-      localStorage.setItem('employerJobs', JSON.stringify(allJobs));
-      
-      setSubmitSuccess(true);
-      
-      // Reset form
-      setFormData({
-        title: "",
-        company: "",
-        location: "",
-        salary: "",
-        jobType: "",
-        description: "",
-        requirements: "",
-        applicationDeadline: "",
-        experienceLevel: "",
-        contactEmail: employerEmail
-      });
-      
-      // Navigate to job management page after short delay
-      setTimeout(() => {
-        navigate('/employer-job-management');
-      }, 1500);
-    } catch (error) {
-      console.error("Error saving job:", error);
-      setErrors({
-        submit: "Failed to save job. Please try again."
-      });
-    } finally {
+      // Navigate back to job management
+      navigate('/employer-job-management');
+    } catch (err) {
+      setError('Failed to create job posting. Please try again.');
+      console.error(err);
       setIsSubmitting(false);
     }
   };
 
+  const handleGoBack = () => {
+    navigate('/employer-job-management');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <Button 
-          variant="ghost" 
-          className="mb-4 flex items-center gap-2"
-          onClick={() => navigate('/employer-job-management')}
-        >
-          <ArrowLeft size={16} />
-          Back to Job Management
-        </Button>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="container mx-auto max-w-3xl">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            className="mr-4"
+            onClick={handleGoBack}
+          >
+            <FaArrowLeft className="mr-2" /> Back
+          </Button>
+          <h1 className="text-3xl font-bold">Post a New Job</h1>
+        </div>
         
-        {submitSuccess && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            Job posted successfully! Redirecting to job management...
-          </div>
-        )}
-        
-        {errors.submit && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {errors.submit}
-          </div>
-        )}
-        
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Job Posting Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Post a New Job</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={handleSubmit}>
+        <Card>
+          <CardContent className="p-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <Label htmlFor="title" className="text-gray-700 font-medium">Job Title *</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="e.g. Frontend Developer"
+                  className="mt-1"
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="title">Job Title</Label>
-                  <Input 
-                    id="title" 
-                    placeholder="Enter job title" 
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className={errors.title ? "border-red-500" : ""}
-                  />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="company">Company Name</Label>
-                  <Input 
-                    id="company" 
-                    placeholder="Enter company name" 
+                  <Label htmlFor="company" className="text-gray-700 font-medium">Company Name *</Label>
+                  <Input
+                    id="company"
+                    name="company"
                     value={formData.company}
-                    onChange={handleInputChange}
-                    className={errors.company ? "border-red-500" : ""}
+                    onChange={handleChange}
+                    placeholder="e.g. Tech Innovations Inc."
+                    className="mt-1"
+                    required
                   />
-                  {errors.company && <p className="text-red-500 text-sm mt-1">{errors.company}</p>}
                 </div>
                 
                 <div>
-                  <Label htmlFor="location">Location</Label>
-                  <Input 
-                    id="location" 
-                    placeholder="Enter job location" 
+                  <Label htmlFor="location" className="text-gray-700 font-medium">Location *</Label>
+                  <Input
+                    id="location"
+                    name="location"
                     value={formData.location}
-                    onChange={handleInputChange}
-                    className={errors.location ? "border-red-500" : ""}
+                    onChange={handleChange}
+                    placeholder="e.g. San Francisco, CA or Remote"
+                    className="mt-1"
+                    required
                   />
-                  {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="salary">Salary</Label>
-                  <Input 
-                    id="salary" 
-                    placeholder="Enter salary details" 
-                    value={formData.salary}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="jobType">Job Type</Label>
-                  <Select 
-                    value={formData.jobType} 
-                    onValueChange={(value) => handleSelectChange(value, "jobType")}
-                  >
-                    <SelectTrigger id="jobType" className={errors.jobType ? "border-red-500" : ""}>
-                      <SelectValue placeholder="Select job type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Full-time">Full-time</SelectItem>
-                      <SelectItem value="Part-time">Part-time</SelectItem>
-                      <SelectItem value="Contract">Contract</SelectItem>
-                      <SelectItem value="Internship">Internship</SelectItem>
-                      <SelectItem value="Remote">Remote</SelectItem>
-                      <SelectItem value="Hybrid">Hybrid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.jobType && <p className="text-red-500 text-sm mt-1">{errors.jobType}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="experienceLevel">Experience Level</Label>
-                  <Select 
-                    value={formData.experienceLevel} 
-                    onValueChange={(value) => handleSelectChange(value, "experienceLevel")}
-                  >
-                    <SelectTrigger id="experienceLevel">
-                      <SelectValue placeholder="Select experience level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Entry-level">Entry-level</SelectItem>
-                      <SelectItem value="Junior">Junior</SelectItem>
-                      <SelectItem value="Mid-level">Mid-level</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                      <SelectItem value="Lead">Lead</SelectItem>
-                      <SelectItem value="Manager">Manager</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="applicationDeadline">Application Deadline</Label>
-                  <Input 
-                    id="applicationDeadline" 
-                    type="date" 
-                    value={formData.applicationDeadline}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description">Job Description</Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Enter job description" 
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    className={errors.description ? "border-red-500" : ""}
-                    rows={5}
-                  />
-                  {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                </div>
-                
-                <div>
-                  <Label htmlFor="requirements">Requirements</Label>
-                  <Textarea 
-                    id="requirements" 
-                    placeholder="Enter job requirements (one per line)" 
-                    value={formData.requirements}
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
-                  <p className="text-gray-500 text-sm mt-1">Enter each requirement on a new line</p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="contactEmail">Contact Email</Label>
-                  <Input 
-                    id="contactEmail" 
-                    type="email"
-                    placeholder="Enter contact email" 
-                    value={formData.contactEmail}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full flex items-center justify-center gap-2"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      Posting Job...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={16} />
-                      Post Job
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          
-          {/* Job Alert Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Job Alerts</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email-alerts">Email Alerts</Label>
-                  <Switch id="email-alerts" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="sms-alerts">SMS Alerts</Label>
-                  <Switch id="sms-alerts" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="push-alerts">Push Notifications</Label>
-                  <Switch id="push-alerts" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div>
+                <Label htmlFor="salary" className="text-gray-700 font-medium">Salary Range</Label>
+                <Input
+                  id="salary"
+                  name="salary"
+                  value={formData.salary}
+                  onChange={handleChange}
+                  placeholder="e.g. $80,000 - $100,000"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="description" className="text-gray-700 font-medium">Job Description *</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Describe the job role, responsibilities, and expectations..."
+                  className="mt-1"
+                  rows={5}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="requirements" className="text-gray-700 font-medium">Requirements</Label>
+                <Textarea
+                  id="requirements"
+                  name="requirements"
+                  value={formData.requirements}
+                  onChange={handleChange}
+                  placeholder="List the skills, qualifications, and experience required..."
+                  className="mt-1"
+                  rows={4}
+                />
+              </div>
+              
+              <div className="flex justify-end pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mr-4"
+                  onClick={handleGoBack}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-green-500 hover:bg-green-600"
+                  disabled={isSubmitting}
+                >
+                  <FaSave className="mr-2" />
+                  {isSubmitting ? 'Posting...' : 'Post Job'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-}
+};
+
+export default JobPostingScreen;

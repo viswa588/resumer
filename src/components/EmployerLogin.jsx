@@ -10,6 +10,8 @@ import { Eye, EyeOff, Briefcase, Lock, Mail } from "lucide-react";
 import { Label } from "./ui/label";
 import { useNavigate } from "react-router-dom";
 import { loginUser, USER_TYPES } from "../services/authService";
+import { saveUserProfile } from "../services/userService";
+import { initializeSampleJobs } from "../services/jobService";
 
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,9 +27,6 @@ export default function EmployerLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
-    // Demo login
-  
-
     // Form validation
     if (!email || !password) {
       setError("Please fill in all fields");
@@ -42,39 +41,60 @@ export default function EmployerLogin() {
       return;
     }
 
-    
-
     setIsSubmitting(true);
 
     if (email === "employer@re.com" && password === "employer#") {
+      // Initialize sample jobs
+      initializeSampleJobs();
+      
+      // Save user data for demo account
+      saveUserProfile({
+        email: "employer@re.com",
+        firstName: "Jane",
+        lastName: "Employer",
+        role: "employer",
+        about: "HR Manager at Tech Innovations Inc. with 10+ years of experience in talent acquisition."
+      });
+      
       navigate("/employer-dashboard");
     } else {
+      try {
+        // Initialize sample jobs
+        initializeSampleJobs();
+        
+        const result = await loginUser({ 
+          email, 
+          password,
+          userType: USER_TYPES.EMPLOYER 
+        });
 
-    try {
-      const result = await loginUser({ 
-        email, 
-        password,
-        userType: USER_TYPES.EMPLOYER 
-      });
-
-      if (result.success) {
-        if (result.user.userType !== USER_TYPES.EMPLOYER) {
-          setError(`This account is registered as a job seeker. Please use the job seeker login.`);
-          setIsSubmitting(false);
-          return;
+        if (result.success) {
+          if (result.user.userType !== USER_TYPES.EMPLOYER) {
+            setError(`This account is registered as a job seeker. Please use the job seeker login.`);
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Save user data
+          saveUserProfile({
+            email,
+            firstName: result.user.firstName || "",
+            lastName: result.user.lastName || "",
+            role: "employer"
+          });
+          
+          navigate("/employer-dashboard");
+        } else {
+          setError(result.message);
         }
-        navigate("/employer-dashboard");
-      } else {
-        setError(result.message);
+      }
+      catch (err) {
+        setError("Login failed. Please try again.");
+        console.error(err);
+      } finally {
+        setIsSubmitting(false);
       }
     }
-     catch (err) {
-      setError("Login failed. Please try again.");
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
   };
 
   return (

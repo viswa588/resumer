@@ -10,6 +10,9 @@ import { Eye, EyeOff } from "lucide-react";
 import { Label } from "./ui/label";
 import { useNavigate } from "react-router-dom";
 import { loginUser, USER_TYPES } from "../services/authService";
+import { saveUserProfile } from "../services/userService";
+import { initializeSampleJobs } from "../services/jobService";
+import { initializeSampleData } from "../data/sampleData";
 import backgroundImage from "../assets/jobseekarbackground.jpeg";
 
 const validateEmail = (email) => {
@@ -27,6 +30,19 @@ export default function JobSeekerLogin() {
 
   const handleLogin = async () => {
     if (email === "student@re.com" && password === "$tudent") {
+      // Initialize sample data
+      initializeSampleData();
+      initializeSampleJobs();
+      
+      // Save user data for demo account
+      saveUserProfile({
+        email: "student@re.com",
+        firstName: "John",
+        lastName: "Student",
+        role: "jobSeeker",
+        about: "I am a passionate job seeker looking for opportunities in software development."
+      });
+      
       navigate("/profile");
       return;
     }
@@ -47,6 +63,9 @@ export default function JobSeekerLogin() {
     setIsSubmitting(true);
 
     try {
+      // Initialize sample jobs
+      initializeSampleJobs();
+      
       const result = await loginUser({
         email,
         password,
@@ -61,6 +80,15 @@ export default function JobSeekerLogin() {
           setIsSubmitting(false);
           return;
         }
+        
+        // Save user data
+        saveUserProfile({
+          email,
+          firstName: result.user.firstName || "",
+          lastName: result.user.lastName || "",
+          role: "jobSeeker"
+        });
+        
         navigate("/profile");
       } else {
         setError(result.message);
@@ -84,8 +112,6 @@ export default function JobSeekerLogin() {
       width: '100%',
       height: '100vh'
     }}>
-      {/* Form Section Only */}
-
       <div className="flex-1 flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, x: 40 }}

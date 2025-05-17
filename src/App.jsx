@@ -14,7 +14,10 @@ import JobPostingPage from './components/JobPostingScreen';
 import JobEditScreen from './components/JobEditScreen';
 import TimeSheetEntry from "./components/TimeSheetEntry";
 import TimeSheetList from "./components/TimeSheetList";
+import TimeSheetView from "./components/TimeSheetView";
 import TimeSheetApproval from "./components/TimeSheetApproval";
+import PaymentProcessing from "./components/PaymentProcessing";
+import PaymentConfirmation from "./components/PaymentConfirmation";
 import JobDetailsPage from './components/JobDetailsPage';
 import WelcomeJobPage from './components/WelcomeJobPage';
 import RolesAndResponsibilities from './components/RolesAndResponsibilities';
@@ -63,7 +66,7 @@ function AppRoutes() {
       <Route path="/timesheet/new/:id" element={<TimeSheetEntry />} />
       <Route path="/timesheet/list" element={<TimeSheetList />} />
       <Route path="/timesheet/edit/:id" element={<TimeSheetEntry />} />
-      <Route path="/timesheet/view/:id" element={<TimeSheetList />} />    
+      <Route path="/timesheet/view/:id" element={<TimeSheetView />} />    
       <Route path="/notification-test" element={<NotificationTest />} />
 
       {/* Employer Routes */}
@@ -73,6 +76,8 @@ function AppRoutes() {
       <Route path="/employer-job-posting" element={<JobPostingPage />} />
       <Route path="/employer-job-edit/:id" element={<JobEditScreen />} />
       <Route path="/timesheet/approval" element={<TimeSheetApproval />} />
+      <Route path="/payment/process/:id" element={<PaymentProcessing />} />
+      <Route path="/payment/confirmation" element={<PaymentConfirmation />} />
     </Routes>
   );
 }

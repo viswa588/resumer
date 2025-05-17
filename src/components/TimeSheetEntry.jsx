@@ -1,261 +1,310 @@
-// components/TimeSheetEntry.jsx
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Separator } from "./ui/separator";
-import { format } from "date-fns";
-import { jobs } from "../data/jobs";
-import { updateTimesheetInLocalStorage } from "../lib/timesheetUtils";
-import { useNotification } from "../context/NotificationContext";
-
-const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Card, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { FaPlus, FaTrash, FaSave, FaArrowLeft } from 'react-icons/fa';
+import { submitTimesheet } from '../services/timesheetService';
+import { getApprovedJobIds } from '../services/applicationService';
+import { jobs } from '../data/jobs';
 
 const TimeSheetEntry = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const { addTimesheetNotification } = useNotification();
-  const [currentJob, setCurrentJob] = useState(null);
-  const [entries, setEntries] = useState([
-    {
-      project: "",
-      task: "",
-      hours: ["", "", "", "", "", "", ""],
-    },
-  ]);
+  const { id } = useParams(); // Job ID if provided
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [approvedJobs, setApprovedJobs] = useState([]);
+  const [weekStartDate, setWeekStartDate] = useState('');
+  const [weekEndDate, setWeekEndDate] = useState('');
+  const [entries, setEntries] = useState([{ day: 'Monday', hours: '00:00', description: '' }]);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load job details if ID is provided
   useEffect(() => {
+    // Get current user email
+    const userEmail = localStorage.getItem('userEmail') || '';
+    
+    // Get approved job IDs for the user
+    const approvedJobIds = getApprovedJobIds(userEmail);
+    
+    if (approvedJobIds.length === 0) {
+      setError('You do not have any approved jobs. Please apply for jobs and wait for approval.');
+      return;
+    }
+    
+    // Load approved jobs
+    const approvedJobsData = jobs.filter(job => approvedJobIds.includes(job.id));
+    setApprovedJobs(approvedJobsData);
+    
+    // If job ID is provided in URL, select that job
     if (id) {
       const jobId = parseInt(id);
-      const foundJob = jobs.find(j => j.id === jobId);
-      
-      if (foundJob) {
-        setCurrentJob(foundJob);
-        
-        // Pre-populate the first entry with the job details
-        const updatedEntries = [...entries];
-        updatedEntries[0].project = `${foundJob.title} - ${foundJob.company}`;
-        setEntries(updatedEntries);
+      const job = approvedJobsData.find(j => j.id === jobId);
+      if (job) {
+        setSelectedJob(job);
+      } else {
+        setError('Selected job not found or not approved.');
       }
+    } else if (approvedJobsData.length > 0) {
+      // Default to first approved job
+      setSelectedJob(approvedJobsData[0]);
     }
+    
+    // Set default week dates (current week)
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Calculate start of week (Monday)
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    
+    // Calculate end of week (Sunday)
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    
+    // Format dates as YYYY-MM-DD for input fields
+    setWeekStartDate(startDate.toISOString().split('T')[0]);
+    setWeekEndDate(endDate.toISOString().split('T')[0]);
   }, [id]);
 
-  // Get projects - include current job if available
-  const getProjects = () => {
-    const defaultProjects = [
-      { id: 1, name: "Project A" },
-      { id: 2, name: "Project B" },
-      { id: 3, name: "Project C" },
-    ];
+  const addEntry = () => {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const usedDays = entries.map(entry => entry.day);
+    const availableDays = days.filter(day => !usedDays.includes(day));
     
-    if (currentJob) {
-      return [
-        { id: currentJob.id, name: `${currentJob.title} - ${currentJob.company}` },
-        ...defaultProjects
-      ];
+    if (availableDays.length === 0) {
+      setError('All days of the week have been added.');
+      return;
     }
     
-    return defaultProjects;
+    setEntries([...entries, { day: availableDays[0], hours: '00:00', description: '' }]);
   };
 
-  const projects = getProjects();
-
-  const tasks = [
-    { id: 1, name: "Task A" },
-    { id: 2, name: "Task B" },
-    { id: 3, name: "Task C" },
-    { id: 4, name: "Task D" },
-  ];
-
-  const handleEntryChange = (rowIndex, field, value) => {
-    const updated = [...entries];
-    updated[rowIndex][field] = value;
-    setEntries(updated);
+  const removeEntry = (index) => {
+    const newEntries = [...entries];
+    newEntries.splice(index, 1);
+    setEntries(newEntries);
   };
 
-  const handleHourChange = (rowIndex, dayIndex, value) => {
-    const updated = [...entries];
-    updated[rowIndex].hours[dayIndex] = value;
-    setEntries(updated);
+  const updateEntry = (index, field, value) => {
+    const newEntries = [...entries];
+    newEntries[index] = { ...newEntries[index], [field]: value };
+    setEntries(newEntries);
   };
 
-  const handleAddRow = () => {
-    setEntries([...entries, { project: "", task: "", hours: ["", "", "", "", "", "", ""] }]);
+  const validateForm = () => {
+    if (!selectedJob) {
+      setError('Please select a job.');
+      return false;
+    }
+    
+    if (!weekStartDate || !weekEndDate) {
+      setError('Please select week start and end dates.');
+      return false;
+    }
+    
+    if (entries.length === 0) {
+      setError('Please add at least one time entry.');
+      return false;
+    }
+    
+    // Validate each entry
+    for (const entry of entries) {
+      if (!entry.day || !entry.hours) {
+        setError('Please fill in all required fields for each entry.');
+        return false;
+      }
+    }
+    
+    return true;
   };
 
-  const calculateTotal = (dayIndex) => {
-    return entries.reduce((sum, entry) => {
-      const val = parseFloat(entry.hours[dayIndex]);
-      return sum + (isNaN(val) ? 0 : val);
-    }, 0);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     
-    // Calculate total hours
-    const totalHours = entries.reduce((sum, entry) => {
-      return sum + entry.hours.reduce((hourSum, hour) => {
-        const hourValue = parseFloat(hour);
-        return hourSum + (isNaN(hourValue) ? 0 : hourValue);
-      }, 0);
-    }, 0);
+    if (!validateForm()) return;
     
-    // Save timesheet entries to localStorage
-    const timesheets = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    const newTimesheet = {
-      id: Date.now(),
-      jobId: currentJob ? currentJob.id : null,
-      userId: "user123", // This would normally come from authentication
-      userName: "John Doe", // This would normally come from authentication
-      jobTitle: currentJob ? currentJob.title : "General",
-      weekEnding: new Date().toISOString().split('T')[0], // Use current date as week ending
-      totalHours: totalHours,
-      status: "Pending",
-      submittedDate: new Date().toISOString(),
-      date: new Date().toISOString(),
-      entries: entries,
-    };
+    setIsSubmitting(true);
     
-    timesheets.push(newTimesheet);
-    localStorage.setItem('timesheets', JSON.stringify(timesheets));
-    
-    // Also update the individual timesheet in localStorage using the new function
-    updateTimesheetInLocalStorage(newTimesheet);
-    
-    // Add notification for timesheet submission
-    addTimesheetNotification('submitted', newTimesheet.date, newTimesheet.id);
-    
-    // Navigate back to profile or timesheet list
-    if (currentJob) {
-      navigate('/profile');
-    } else {
-      navigate('/timesheet/list');
+    try {
+      // Create timesheet object
+      const timesheet = {
+        jobId: selectedJob.id,
+        jobTitle: selectedJob.title,
+        companyName: selectedJob.company,
+        userEmail: localStorage.getItem('userEmail') || '',
+        weekStartDate,
+        weekEndDate,
+        entries,
+        date: new Date().toISOString().split('T')[0]
+      };
+      
+      // Submit timesheet
+      const result = submitTimesheet(timesheet);
+      
+      if (result.success) {
+        alert('Timesheet submitted successfully. It will be available after approval by the employer.');
+        navigate('/timesheet/list');
+      } else {
+        setError(result.message || 'Failed to submit timesheet.');
+      }
+    } catch (err) {
+      setError('An error occurred while submitting the timesheet.');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const handleGoBack = () => {
-    navigate(currentJob ? '/profile' : '/timesheet/list');
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="container mx-auto px-4">
-        <Card className="max-w-6xl mx-auto">
-          <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
-            <div>
-              <div className="flex items-center mb-4">
-                <button 
-                  onClick={handleGoBack}
-                  className="flex items-center text-blue-600 hover:text-blue-800 mr-4"
-                >
-                  <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                  </svg>
-                  Back
-                </button>
-                <CardTitle className="text-2xl font-bold">Timesheet Entry</CardTitle>
-              </div>
-              <CardDescription>
-                {currentJob 
-                  ? `Enter your hours for ${currentJob.title} at ${currentJob.company}`
-                  : "Enter your project hours for the week"
-                }
-              </CardDescription>
-            </div>
-            <Button variant="outline" onClick={handleAddRow}>Add Row</Button>
-          </CardHeader>
-          <CardContent>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="container mx-auto max-w-4xl">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            className="mr-4"
+            onClick={() => navigate('/profile')}
+          >
+            <FaArrowLeft className="mr-2" /> Back to Profile
+          </Button>
+          <h1 className="text-3xl font-bold">Submit Timesheet</h1>
+        </div>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-6">
+            {error}
+          </div>
+        )}
+        
+        <Card>
+          <CardContent className="p-6">
             <form onSubmit={handleSubmit}>
-              <div className="overflow-x-auto">
-                <table className="min-w-full table-auto border border-gray-300 text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="p-2 text-left border">Project</th>
-                      <th className="p-2 text-left border">Task Description</th>
-                      {daysOfWeek.map((day, idx) => (
-                        <th key={idx} className="p-2 border">{day}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((entry, rowIndex) => (
-                      <tr key={rowIndex}>
-                        <td className="p-2 border">
-                          <Select
-                            value={entry.project}
-                            onValueChange={(value) => handleEntryChange(rowIndex, "project", value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select project" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {projects.map((proj) => (
-                                <SelectItem key={proj.id} value={proj.name}>{proj.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="p-2 border">
-                          <Select
-                            value={entry.task}
-                            onValueChange={(value) => handleEntryChange(rowIndex, "task", value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select task" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {tasks.map((task) => (
-                                <SelectItem key={task.id} value={task.name}>{task.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        {entry.hours.map((val, dayIndex) => (
-                          <td key={dayIndex} className="p-2 border">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              value={val}
-                              onChange={(e) => handleHourChange(rowIndex, dayIndex, e.target.value)}
-                            />
-                          </td>
-                        ))}
-                      </tr>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <Label htmlFor="job">Job</Label>
+                  <select
+                    id="job"
+                    className="w-full p-2 border rounded-md mt-1"
+                    value={selectedJob?.id || ''}
+                    onChange={(e) => {
+                      const jobId = parseInt(e.target.value);
+                      const job = approvedJobs.find(j => j.id === jobId);
+                      setSelectedJob(job);
+                    }}
+                    disabled={approvedJobs.length === 0}
+                  >
+                    <option value="">Select a job</option>
+                    {approvedJobs.map(job => (
+                      <option key={job.id} value={job.id}>
+                        {job.title} - {job.company}
+                      </option>
                     ))}
-                    <tr className="bg-gray-50 font-medium">
-                      <td className="p-2 border text-right" colSpan={2}>Total</td>
-                      {daysOfWeek.map((_, idx) => (
-                        <td key={idx} className="p-2 border">{calculateTotal(idx)}</td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="weekStartDate">Week Start</Label>
+                    <Input
+                      id="weekStartDate"
+                      type="date"
+                      value={weekStartDate}
+                      onChange={(e) => setWeekStartDate(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weekEndDate">Week End</Label>
+                    <Input
+                      id="weekEndDate"
+                      type="date"
+                      value={weekEndDate}
+                      onChange={(e) => setWeekEndDate(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-semibold">Time Entries</h3>
+                  <Button 
+                    type="button"
+                    onClick={addEntry}
+                    className="bg-blue-500 hover:bg-blue-600"
+                  >
+                    <FaPlus className="mr-2" /> Add Day
+                  </Button>
+                </div>
+                
+                {entries.map((entry, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-4 mb-4 items-end">
+                    <div className="col-span-3">
+                      <Label htmlFor={`day-${index}`}>Day</Label>
+                      <select
+                        id={`day-${index}`}
+                        className="w-full p-2 border rounded-md mt-1"
+                        value={entry.day}
+                        onChange={(e) => updateEntry(index, 'day', e.target.value)}
+                      >
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor={`hours-${index}`}>Hours</Label>
+                      <Input
+                        id={`hours-${index}`}
+                        type="time"
+                        value={entry.hours}
+                        onChange={(e) => updateEntry(index, 'hours', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="col-span-6">
+                      <Label htmlFor={`description-${index}`}>Description</Label>
+                      <Input
+                        id={`description-${index}`}
+                        type="text"
+                        placeholder="Work description"
+                        value={entry.description}
+                        onChange={(e) => updateEntry(index, 'description', e.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-red-500 text-red-500 hover:bg-red-50 p-2"
+                        onClick={() => removeEntry(index)}
+                      >
+                        <FaTrash />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  className="bg-green-500 hover:bg-green-600"
+                  disabled={isSubmitting}
+                >
+                  <FaSave className="mr-2" />
+                  {isSubmitting ? 'Submitting...' : 'Submit Timesheet'}
+                </Button>
               </div>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-end gap-4">
-            <Button variant="outline" type="button">Save Draft</Button>
-            <Button type="submit" onClick={handleSubmit}>Submit</Button>
-          </CardFooter>
         </Card>
       </div>
     </div>

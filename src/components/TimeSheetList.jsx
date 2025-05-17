@@ -78,7 +78,13 @@ const TimeSheetList = () => {
   };
 
   const calculateTotalHours = (entries) => {
+    if (!entries || !Array.isArray(entries)) {
+      return 0;
+    }
     return entries.reduce((total, entry) => {
+      if (!entry || !entry.hours) {
+        return total;
+      }
       return total + calculateHours(entry.hours);
     }, 0);
   };
@@ -135,6 +141,7 @@ const TimeSheetList = () => {
                       )}
                       <TableCell className="font-semibold p-2 border">Week</TableCell>
                       <TableCell className="font-semibold p-2 border">Total Hours</TableCell>
+                      <TableCell className="font-semibold p-2 border">Status</TableCell>
                       <TableCell className="font-semibold p-2 border text-center">Actions</TableCell>
                     </TableRow>
                   </TableHeader>
@@ -153,14 +160,31 @@ const TimeSheetList = () => {
                             )}
                             <TableCell className="p-2 border">{getWeekRange(ts.date)}</TableCell>
                             <TableCell className="p-2 border">{totalHours.toFixed(2)}</TableCell>
+                            <TableCell className="p-2 border">
+                              {ts.status === 'approved' ? (
+                                <Badge className="bg-green-100 text-green-800 border border-green-300">
+                                  Approved
+                                </Badge>
+                              ) : ts.status === 'rejected' ? (
+                                <Badge className="bg-red-100 text-red-800 border border-red-300">
+                                  Rejected
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300">
+                                  Pending
+                                </Badge>
+                              )}
+                            </TableCell>
                             <TableCell className="p-2 border text-center">
                               <div className="flex justify-center space-x-2">
                                 <Button variant="outline" size="sm" onClick={() => handleView(ts.id)}>
                                   View
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => handleEdit(ts.id)}>
-                                  Edit
-                                </Button>
+                                {ts.status !== 'approved' && (
+                                  <Button variant="outline" size="sm" onClick={() => handleEdit(ts.id)}>
+                                    Edit
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>

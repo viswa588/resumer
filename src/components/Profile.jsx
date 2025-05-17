@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf, FaFileInvoiceDollar } from 'react-icons/fa';
+import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf, FaFileInvoiceDollar, FaClipboardList } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import HistoryModal from './HistoryModal';
 import JobCard from './JobCard';
@@ -11,10 +11,12 @@ import NotificationBadge from './NotificationBadge';
 import PaycheckBadge from './PaycheckBadge';
 import { useNotification } from '../context/NotificationContext';
 import { initializeSamplePaychecks } from '../services/paycheckService';
+import { hasApprovedApplications, getApprovedJobIds } from '../services/applicationService';
+import { hasApprovedTimesheets, getApprovedTimesheetsByUser } from '../services/timesheetService';
+import { getUserProfile, saveUserProfile, initializeUserData } from '../services/userService';
 import logo from '../assets/icon.png';
 import { jobs } from '../data/jobs';
 import { calculateHours } from '../lib/hourUtils';
-
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -35,6 +37,15 @@ const Profile = () => {
   const [showEmailDropdown, setShowEmailDropdown] = useState(false);
   const [paychecks, setPaychecks] = useState([]);
   const [newPaychecksCount, setNewPaychecksCount] = useState(0);
+  const [hasApprovedJobs, setHasApprovedJobs] = useState(false);
+  const [hasTimesheets, setHasTimesheets] = useState(false);
+  const [userProfile, setUserProfile] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    fullName: 'User',
+    about: ''
+  });
   
   // Get notification context
   const { 
@@ -46,23 +57,64 @@ const Profile = () => {
   } = useNotification();
 
   useEffect(() => {
-    // Load accepted jobs from localStorage
-    const jobOfferStatuses = JSON.parse(localStorage.getItem('jobOfferStatuses') || '{}');
-    const acceptedJobIds = Object.keys(jobOfferStatuses)
-      .filter(id => jobOfferStatuses[id] === 'accepted')
-      .map(id => parseInt(id));
+    // Initialize user data for demo accounts
+    initializeUserData();
     
-    const acceptedJobsData = jobs.filter(job => acceptedJobIds.includes(job.id));
-    setAcceptedJobs(acceptedJobsData);
+    // Get user profile data
+    const profile = getUserProfile();
+    setUserProfile(profile);
+    setAbout(profile.about || '');
+    
+    // Get current user email
+    const userEmail = profile.email || localStorage.getItem('userEmail') || '';
+    
+    // Check if user has any approved job applications
+    const hasApproved = hasApprovedApplications(userEmail);
+    setHasApprovedJobs(hasApproved);
+    
+    if (hasApproved) {
+      // Get approved job IDs
+      const approvedJobIds = getApprovedJobIds(userEmail);
+      
+      // Load accepted jobs based on approved applications
+      const acceptedJobsData = jobs.filter(job => approvedJobIds.includes(job.id));
+      setAcceptedJobs(acceptedJobsData);
+      
+      // Check if user has any approved timesheets
+      const hasApprovedTS = hasApprovedTimesheets(userEmail);
+      setHasTimesheets(hasApprovedTS);
+      
+      if (hasApprovedTS) {
+        // Load approved timesheets
+        const approvedTimesheets = getApprovedTimesheetsByUser(userEmail);
+        setTimesheets(approvedTimesheets);
+        
+        // Load paychecks from localStorage if they exist
+        const savedPaychecks = JSON.parse(localStorage.getItem('userPaychecks') || '[]');
+        if (savedPaychecks.length > 0) {
+          setPaychecks(savedPaychecks);
+          
+          // Set new paychecks count
+          const viewedPaychecks = JSON.parse(localStorage.getItem('viewedPaychecks') || '[]');
+          const newPaychecks = savedPaychecks.filter(p => !viewedPaychecks.includes(p.id));
+          setNewPaychecksCount(newPaychecks.length);
+        }
+      } else {
+        // No approved timesheets, clear timesheets and paychecks
+        setTimesheets([]);
+        setPaychecks([]);
+      }
+    } else {
+      // No approved jobs, clear accepted jobs, timesheets, and paychecks
+      setAcceptedJobs([]);
+      setTimesheets([]);
+      setPaychecks([]);
+    }
     
     // Load applied jobs from localStorage
     const appliedJobIds = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
     const appliedJobsData = jobs.filter(job => appliedJobIds.includes(job.id));
     setAppliedJobs(appliedJobsData);
-
-    // Load timesheets from localStorage
-    const timesheetsData = JSON.parse(localStorage.getItem('timesheets') || '[]');
-    setTimesheets(timesheetsData);
     
     // Load resume from localStorage if it exists
     const savedResume = localStorage.getItem('userResume');
@@ -71,23 +123,6 @@ const Profile = () => {
       setResume(savedResume);
       setResumeFileName(savedResumeFileName || 'resume.pdf');
     }
-    
-    // Load paychecks from localStorage if they exist
-    const savedPaychecks = JSON.parse(localStorage.getItem('userPaychecks') || '[]');
-    if (savedPaychecks.length > 0) {
-      setPaychecks(savedPaychecks);
-    } else {
-      // Initialize sample paychecks if none exist
-      const samplePaychecks = initializeSamplePaychecks();
-      setPaychecks(samplePaychecks);
-    }
-    
-    // Set new paychecks count - in a real app, this would check for unread/new paychecks
-    const viewedPaychecks = JSON.parse(localStorage.getItem('viewedPaychecks') || '[]');
-    const newPaychecks = savedPaychecks.length > 0 
-      ? savedPaychecks.filter(p => !viewedPaychecks.includes(p.id))
-      : 2; // Default to 2 new paychecks for demo purposes
-    setNewPaychecksCount(typeof newPaychecks === 'number' ? newPaychecks : newPaychecks.length);
   }, []);
 
   const handleVideoModalOpen = () => {
@@ -99,6 +134,23 @@ const Profile = () => {
   };
   
   const handlePaychecksModalOpen = () => {
+    if (!hasApprovedJobs) {
+      // Show message that no paychecks are available until job is approved
+      alert('No paychecks available. Your job application needs to be approved by an employer first.');
+      return;
+    }
+    
+    if (!hasTimesheets) {
+      // Show message that no paychecks are available until timesheet is approved
+      alert('No paychecks available. You need to submit timesheets and have them approved by an employer first.');
+      return;
+    }
+    
+    if (paychecks.length === 0) {
+      alert('No paychecks available yet. Your employer needs to process your approved timesheets.');
+      return;
+    }
+    
     setIsPaychecksModalOpen(true);
     // Mark all paychecks as viewed
     const payCheckIds = paychecks.map(p => p.id);
@@ -114,63 +166,15 @@ const Profile = () => {
     // Clear user data from localStorage
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('userFirstName');
+    localStorage.removeItem('userLastName');
+    localStorage.removeItem('userAbout');
     localStorage.removeItem('appliedJobs');
     localStorage.removeItem('userResume');
     localStorage.removeItem('userResumeFileName');
     
     // Redirect to login page
     navigate('/login');
-  };
-
-  
-
-  // Dummy jobs data
-  // const [jobs] = useState([
-  //   {
-  //     id: 1,
-  //     title: "Senior Software Engineer",
-  //     company: "Tech Corp",
-  //     location: "San Francisco, CA",
-  //     description: "We are looking for a Senior Software Engineer to join our team...",
-  //     requirements: [
-  //       "5+ years of experience in software development",
-  //       "Strong proficiency in React and Node.js",
-  //       "Experience with cloud platforms (AWS/Azure)",
-  //       "Excellent problem-solving skills"
-  //     ]
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "Frontend Developer",
-  //     company: "Web Solutions Inc",
-  //     location: "Remote",
-  //     description: "Join our dynamic team as a Frontend Developer...",
-  //     requirements: [
-  //       "3+ years of frontend development experience",
-  //       "Expertise in React, HTML, CSS",
-  //       "Experience with modern frontend tools",
-  //       "Good communication skills"
-  //     ]
-  //   },
-  //   {
-  //     id: 3,
-  //     title: "Full Stack Developer",
-  //     company: "Innovation Labs",
-  //     location: "New York, NY",
-  //     description: "Looking for a Full Stack Developer to build scalable applications...",
-  //     requirements: [
-  //       "4+ years of full stack development",
-  //       "Experience with React and Node.js",
-  //       "Database design and optimization",
-  //       "Agile development experience"
-  //     ]
-  //   }
-  // ]);
-  
-  // Mock user data - replace with actual user data from your auth system
-  const user = {
-    username: "John Doe",
-    email: "john.doe@example.com"
   };
 
   const handleImageUpload = (event) => {
@@ -224,7 +228,10 @@ const Profile = () => {
   };
 
   const handleAboutUpdate = () => {
-    // Add API call to update about section
+    // Save about text to user profile
+    const updatedProfile = { ...userProfile, about };
+    saveUserProfile(updatedProfile);
+    setUserProfile(updatedProfile);
     setIsEditing(false);
   };
 
@@ -243,6 +250,20 @@ const Profile = () => {
       
       // Add notification with jobId
       addJobApplicationNotification(job.title, job.company, job.id);
+      
+      // Submit job application
+      const userEmail = userProfile.email || localStorage.getItem('userEmail') || '';
+      import('../services/applicationService').then(({ submitJobApplication }) => {
+        submitJobApplication({
+          jobId: job.id,
+          userEmail: userEmail,
+          jobTitle: job.title,
+          companyName: job.company
+        });
+      });
+      
+      // Show message to user
+      alert('Your job application has been submitted. You will be able to submit timesheets once your application is approved by the employer.');
     }
   };
 
@@ -251,6 +272,11 @@ const Profile = () => {
     job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Get display name for user
+  const displayName = userProfile.firstName && userProfile.lastName 
+    ? `${userProfile.firstName} ${userProfile.lastName}`
+    : userProfile.email?.split('@')[0] || "User";
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -307,13 +333,14 @@ const Profile = () => {
       </div>
       <VideoRecordModal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} />
       <PaychecksModal isOpen={isPaychecksModalOpen} onClose={handlePaychecksModalClose} paychecks={paychecks} />
+      
       {/* Profile Content */}
       <div className="container mx-auto px-4 space-y-4">
         <div className="flex flex-col md:flex-row-reverse gap-6">
          
           {/* Virtual Interview and Certification Icons */}
           <div className="w-full md:w-1/12 bg-white rounded-lg shadow-md p-6">
-          <div className="flex flex-row gap-1">
+            <div className="flex flex-row gap-1">
               <div className="items-center p-3 bg-gray-50 rounded-lg cursor-pointer transition-colors">
                 <FaRobot className="text-4xl text-blue-500 mb-3" title='Virtual Interview by AI - Practice with our AI interviewer' />
                 <FaCertificate className="text-4xl text-green-500 mb-3" title='Certification Test - Take the test to get certified' />
@@ -322,6 +349,15 @@ const Profile = () => {
                     className="text-4xl text-blue-500 cursor-pointer hover:text-blue-600"
                     onClick={handleVideoModalOpen}
                     title="Record Video/Audio" 
+                  />
+                </div>
+                <div 
+                  className="relative cursor-pointer"
+                  onClick={() => navigate('/timesheet/list')}
+                >
+                  <FaClipboardList 
+                    className="text-4xl text-purple-500 my-3 hover:text-purple-600"
+                    title="View All Timesheets" 
                   />
                 </div>
                 <div className="relative">
@@ -342,7 +378,7 @@ const Profile = () => {
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-semibold">About</h3>
               <button
-                onClick={() => setIsEditing(!isEditing)}
+                onClick={() => isEditing ? handleAboutUpdate() : setIsEditing(true)}
                 className="text-blue-500 hover:text-blue-600"
               >
                 {isEditing ? 'Save' : 'Edit'}
@@ -358,12 +394,12 @@ const Profile = () => {
               />
             ) : (
               <p className="text-gray-700">
-                {about || "No information provided yet."}
+                {userProfile.about || about || "No information provided yet."}
               </p>
             )}
             
-            {/* Accepted Jobs Section */}
-            {acceptedJobs.length > 0 && (
+            {/* Accepted Jobs Section - Only show if user has approved applications */}
+            {hasApprovedJobs && acceptedJobs.length > 0 && (
               <div className="mt-6 border-t pt-4" >
                 <h3 className="text-lg font-semibold mb-3">Your Current Position</h3>
                 <div style={{maxHeight: '250px', overflowY: 'auto'}}>
@@ -390,11 +426,18 @@ const Profile = () => {
                           <FaFileAlt className="mr-1" />
                           Enter Timesheet
                         </button>
+                        <button
+                          onClick={() => navigate('/timesheet/list')}
+                          className="flex items-center text-purple-600 hover:text-purple-800"
+                        >
+                          <FaClipboardList className="mr-1" />
+                          View Timesheets
+                        </button>
                       </div>
                     </div>
                     
-                    {/* Recent Timesheets */}
-                    {timesheets.filter(ts => ts.jobId === job.id).length > 0 && (
+                    {/* Recent Timesheets - Only show if user has approved timesheets */}
+                    {hasTimesheets && timesheets.filter(ts => ts.jobId === job.id).length > 0 && (
                       <div className="mt-3 pt-3 border-t border-blue-200">
                         <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Timesheets</h5>
                         <div className="space-y-2">
@@ -408,14 +451,30 @@ const Profile = () => {
                                   <span className="text-gray-600">
                                     {timesheet.date || new Date().toLocaleDateString()}
                                   </span>
-                                  <span className="text-blue-600 cursor-pointer" onClick={() => navigate(`/timesheet/view/${timesheet.id}`)}>
-                                    View Details
-                                  </span>
+                                  <div className="flex items-center space-x-2">
+                                    {timesheet.status === 'approved' ? (
+                                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                        Approved
+                                      </span>
+                                    ) : timesheet.status === 'rejected' ? (
+                                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
+                                        Rejected
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                                        Pending
+                                      </span>
+                                    )}
+                                    <span className="text-blue-600 cursor-pointer" onClick={() => navigate(`/timesheet/view/${timesheet.id}`)}>
+                                      View
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="mt-1">
                                   <span className="text-gray-500">
                                     {timesheet?.entries?.reduce((total, entry) => {
-                                      return total + calculateHours(entry?.hours);
+                                      if (!entry || !entry.hours) return total;
+                                      return total + calculateHours(entry.hours);
                                     }, 0).toFixed(1)} hours total
                                   </span>
                                 </div>
@@ -435,9 +494,31 @@ const Profile = () => {
                       </div>
                     )}
                     
-                    {/* We've moved the Paychecks Section to a separate area */}
+                    {/* Message for pending timesheets */}
+                    {hasApprovedJobs && !hasTimesheets && (
+                      <div className="mt-3 pt-3 border-t border-blue-200">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                          <p className="text-yellow-700 text-sm">
+                            No approved timesheets yet. Please submit a timesheet and wait for employer approval.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Message for pending applications */}
+            {appliedJobs.length > 0 && !hasApprovedJobs && (
+              <div className="mt-6 border-t pt-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-medium text-yellow-800">Application Pending</h4>
+                  <p className="text-yellow-700 text-sm mt-1">
+                    Your job application is pending approval from the employer. 
+                    Once approved, you'll be able to submit timesheets and view paychecks.
+                  </p>
                 </div>
               </div>
             )}
@@ -470,8 +551,8 @@ const Profile = () => {
               
               {/* User Info Section */}
               <div className="text-center mt-4">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800">{user.username}</h2>
-                <p className="text-sm md:text-base text-gray-600">{user.email}</p>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800">{displayName}</h2>
+                <p className="text-sm md:text-base text-gray-600">{userProfile.email || "user@example.com"}</p>
               </div>
               
               {/* Resume Upload Section */}
@@ -517,8 +598,6 @@ const Profile = () => {
               </div>
             </div>
           </div>
-
-          
         </div>
       </div>
 
@@ -558,16 +637,6 @@ const Profile = () => {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Job Search Section - Placeholder */}
-        <div className="w-full bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Recent Activity</h3>
-          </div>
-          <p className="text-gray-500 text-center py-8">
-            Your recent activity will appear here.
-          </p>
         </div>
 
         {/* History Modal */}
