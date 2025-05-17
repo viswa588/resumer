@@ -9,7 +9,7 @@ export default function HomePage() {
   };
 
   const handleEmployerClick = () => {
-    navigate("/login");
+    navigate("/employer-login");
   };
 
   return (
