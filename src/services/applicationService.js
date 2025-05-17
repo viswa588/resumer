@@ -97,6 +97,38 @@ export const approveJobApplication = (applicationId) => {
   jobOfferStatuses[applications[appIndex].jobId] = 'accepted';
   localStorage.setItem('jobOfferStatuses', JSON.stringify(jobOfferStatuses));
   
+  // Add notifications directly to localStorage
+  const userEmail = applications[appIndex].userEmail;
+  const jobTitle = applications[appIndex].jobTitle;
+  const company = applications[appIndex].companyName;
+  
+  // Add alert notification
+  const alerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
+  alerts.unshift({
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    read: false,
+    type: 'job-offer',
+    title: 'Job Application Approved',
+    message: `Congratulations! Your application for ${jobTitle} at ${company} has been approved.`,
+    jobId: applications[appIndex].jobId
+  });
+  localStorage.setItem('userAlerts', JSON.stringify(alerts));
+  
+  // Add email notification
+  const emails = JSON.parse(localStorage.getItem('userEmails') || '[]');
+  emails.unshift({
+    id: Date.now() + 1,
+    timestamp: new Date().toISOString(),
+    read: false,
+    type: 'job-offer',
+    subject: `Job Application Approved: ${jobTitle}`,
+    from: `${company} <hr@${company.toLowerCase().replace(/\s+/g, '')}.com>`,
+    message: `Congratulations! Your application for the ${jobTitle} position at ${company} has been approved. You can now submit timesheets for this position.`,
+    jobId: applications[appIndex].jobId
+  });
+  localStorage.setItem('userEmails', JSON.stringify(emails));
+  
   return { success: true, application: applications[appIndex] };
 };
 
@@ -123,6 +155,38 @@ export const rejectJobApplication = (applicationId) => {
   
   // Save to localStorage
   localStorage.setItem('jobApplications', JSON.stringify(applications));
+  
+  // Add notifications directly to localStorage
+  const userEmail = applications[appIndex].userEmail;
+  const jobTitle = applications[appIndex].jobTitle;
+  const company = applications[appIndex].companyName;
+  
+  // Add alert notification
+  const alerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
+  alerts.unshift({
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    read: false,
+    type: 'job-rejection',
+    title: 'Job Application Rejected',
+    message: `We're sorry, but your application for ${jobTitle} at ${company} has been rejected.`,
+    jobId: applications[appIndex].jobId
+  });
+  localStorage.setItem('userAlerts', JSON.stringify(alerts));
+  
+  // Add email notification
+  const emails = JSON.parse(localStorage.getItem('userEmails') || '[]');
+  emails.unshift({
+    id: Date.now() + 1,
+    timestamp: new Date().toISOString(),
+    read: false,
+    type: 'job-rejection',
+    subject: `Job Application Status: ${jobTitle}`,
+    from: `${company} <hr@${company.toLowerCase().replace(/\s+/g, '')}.com>`,
+    message: `Thank you for your interest in the ${jobTitle} position at ${company}. After careful consideration, we have decided to pursue other candidates whose qualifications better match our current needs.`,
+    jobId: applications[appIndex].jobId
+  });
+  localStorage.setItem('userEmails', JSON.stringify(emails));
   
   return { success: true, application: applications[appIndex] };
 };

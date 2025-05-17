@@ -31,7 +31,23 @@ export const saveUserProfile = (userData) => {
     if (userData.lastName) localStorage.setItem('userLastName', userData.lastName);
     if (userData.email) localStorage.setItem('userEmail', userData.email);
     if (userData.role) localStorage.setItem('userRole', userData.role);
-    if (userData.about) localStorage.setItem('userAbout', userData.about);
+    if (userData.about !== undefined) localStorage.setItem('userAbout', userData.about);
+    
+    // Also save to users collection for employer to view
+    if (userData.email) {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const existingUserIndex = users.findIndex(u => u.email === userData.email);
+      
+      if (existingUserIndex >= 0) {
+        // Update existing user
+        users[existingUserIndex] = { ...users[existingUserIndex], ...userData };
+      } else {
+        // Add new user
+        users.push(userData);
+      }
+      
+      localStorage.setItem('users', JSON.stringify(users));
+    }
     
     return true;
   } catch (error) {

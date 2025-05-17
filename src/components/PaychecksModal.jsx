@@ -1,125 +1,251 @@
 import React, { useState } from 'react';
-import { FaDownload, FaEye, FaFileInvoiceDollar, FaTimes, FaCalendarAlt } from 'react-icons/fa';
-import { Card, CardContent } from './ui/card';
-import PaycheckModal from './PaycheckModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Button } from './ui/button';
+import { FaFileInvoiceDollar, FaDownload, FaPrint, FaSpinner } from 'react-icons/fa';
 
 const PaychecksModal = ({ isOpen, onClose, paychecks = [] }) => {
-  const [viewingPaycheck, setViewingPaycheck] = useState(null);
-  const [isPaycheckDetailModalOpen, setIsPaycheckDetailModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
 
-  if (!isOpen) return null;
+  const handlePrint = (paycheck) => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Paycheck - ${paycheck.period}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .company { font-size: 24px; font-weight: bold; }
+            .title { font-size: 20px; margin: 10px 0; }
+            .paycheck { border: 1px solid #ccc; padding: 20px; max-width: 800px; margin: 0 auto; }
+            .section { margin-bottom: 20px; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+            .label { font-weight: bold; }
+            .amount { text-align: right; }
+            .total { font-size: 18px; font-weight: bold; border-top: 1px solid #ccc; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="paycheck">
+            <div class="header">
+              <div class="company">Tech Innovations Inc.</div>
+              <div class="title">PAYCHECK</div>
+              <div>123 Tech Street, San Francisco, CA 94103</div>
+            </div>
+            
+            <div class="section">
+              <div class="row">
+                <span class="label">Employee:</span>
+                <span>${paycheck.userId}</span>
+              </div>
+              <div class="row">
+                <span class="label">Pay Period:</span>
+                <span>${paycheck.period}</span>
+              </div>
+              <div class="row">
+                <span class="label">Payment Date:</span>
+                <span>${formatDate(paycheck.date)}</span>
+              </div>
+              <div class="row">
+                <span class="label">Job Title:</span>
+                <span>${paycheck.jobTitle}</span>
+              </div>
+            </div>
+            
+            <div class="section">
+              <div class="row">
+                <span class="label">Gross Pay:</span>
+                <span class="amount">${paycheck.amount}</span>
+              </div>
+              <div class="row">
+                <span class="label">Federal Tax (15%):</span>
+                <span class="amount">-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.15).toFixed(2)}</span>
+              </div>
+              <div class="row">
+                <span class="label">State Tax (5%):</span>
+                <span class="amount">-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.05).toFixed(2)}</span>
+              </div>
+              <div class="row">
+                <span class="label">Social Security (6.2%):</span>
+                <span class="amount">-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.062).toFixed(2)}</span>
+              </div>
+              <div class="row">
+                <span class="label">Medicare (1.45%):</span>
+                <span class="amount">-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.0145).toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <div class="row total">
+              <span>Net Pay:</span>
+              <span class="amount">$${(parseFloat(paycheck.amount.replace('$', '')) * 0.7235).toFixed(2)}</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+  };
 
   const handleDownload = (paycheck) => {
-    // In a real app, this would trigger a download of the paycheck PDF
-    alert(`Downloading paycheck for ${paycheck.period}`);
-  };
-
-  const handleView = (paycheck) => {
-    setViewingPaycheck(paycheck);
-    setIsPaycheckDetailModalOpen(true);
-  };
-
-  const closePaycheckDetailModal = () => {
-    setIsPaycheckDetailModalOpen(false);
-    setViewingPaycheck(null);
-  };
-
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    setIsDownloading(true);
+    
+    // Create a container for the PDF content
+    const container = document.createElement('div');
+    container.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="font-size: 24px; font-weight: bold;">Tech Innovations Inc.</div>
+          <div style="font-size: 20px; margin: 10px 0;">PAYCHECK</div>
+          <div>123 Tech Street, San Francisco, CA 94103</div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Employee:</span>
+            <span>${paycheck.userId}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Pay Period:</span>
+            <span>${paycheck.period}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Payment Date:</span>
+            <span>${formatDate(paycheck.date)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Job Title:</span>
+            <span>${paycheck.jobTitle}</span>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Gross Pay:</span>
+            <span>${paycheck.amount}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Federal Tax (15%):</span>
+            <span>-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.15).toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">State Tax (5%):</span>
+            <span>-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.05).toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Social Security (6.2%):</span>
+            <span>-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.062).toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span style="font-weight: bold;">Medicare (1.45%):</span>
+            <span>-$${(parseFloat(paycheck.amount.replace('$', '')) * 0.0145).toFixed(2)}</span>
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; border-top: 1px solid #ccc; padding-top: 10px;">
+          <span>Net Pay:</span>
+          <span>$${(parseFloat(paycheck.amount.replace('$', '')) * 0.7235).toFixed(2)}</span>
+        </div>
+      </div>
+    `;
+    
+    // Use html2pdf to convert the HTML to PDF
+    import('html2pdf.js').then(html2pdfModule => {
+      const html2pdf = html2pdfModule.default;
+      const opt = {
+        margin: 10,
+        filename: `Paycheck-${paycheck.period.replace(/\s/g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().from(container).set(opt).save().then(() => {
+        setIsDownloading(false);
+      });
+    }).catch(err => {
+      console.error('Error loading html2pdf:', err);
+      alert('Failed to generate PDF. Please try again.');
+      setIsDownloading(false);
     });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold flex items-center">
-            <FaFileInvoiceDollar className="mr-2 text-green-600" />
-            Paychecks
-          </h2>
-          <button 
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <FaTimes />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold flex items-center">
+            <FaFileInvoiceDollar className="mr-2 text-green-600" /> Your Paychecks
+          </DialogTitle>
+        </DialogHeader>
         
-        <div className="p-4 overflow-y-auto flex-grow">
-          {paychecks.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No paychecks found.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {paychecks
-                .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort by date, newest first
-                .map(paycheck => (
-                  <Card key={paycheck.id} className="bg-green-50">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{paycheck.period}</h4>
-                          <p className="text-gray-600">{paycheck.amount}</p>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            <FaCalendarAlt className="mr-1" size={12} />
-                            <span>
-                              Issued: {formatDate(paycheck.date)}
-                              {paycheck.weekEnding && ` (Week ending: ${formatDate(paycheck.weekEnding)})`}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleView(paycheck)}
-                            className="flex items-center text-blue-600 hover:text-blue-800 bg-white p-2 rounded-md"
-                            title="View Paycheck"
-                          >
-                            <FaEye />
-                          </button>
-                          <button
-                            onClick={() => handleDownload(paycheck)}
-                            className="flex items-center text-green-600 hover:text-green-800 bg-white p-2 rounded-md"
-                            title="Download Paycheck"
-                          >
-                            <FaDownload />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-2 flex justify-between items-center">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          paycheck.status === 'Paid' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
-                        }`}>
-                          {paycheck.status}
-                        </span>
-                        
-                        {/* Show job title if available */}
-                        {paycheck.jobTitle && (
-                          <span className="text-xs text-gray-500">
-                            {paycheck.jobTitle}
-                          </span>
+        {paychecks.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No paychecks available yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {paychecks.map((paycheck) => (
+              <div 
+                key={paycheck.id} 
+                className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-lg">{paycheck.jobTitle}</h3>
+                    <p className="text-gray-600">Period: {paycheck.period}</p>
+                    <p className="text-gray-500 text-sm">Payment Date: {formatDate(paycheck.date)}</p>
+                    <div className="mt-2">
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {paycheck.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-green-600">{paycheck.amount}</p>
+                    <div className="flex space-x-2 mt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center"
+                        onClick={() => handlePrint(paycheck)}
+                      >
+                        <FaPrint className="mr-1" /> Print
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center"
+                        onClick={() => handleDownload(paycheck)}
+                        disabled={isDownloading}
+                      >
+                        {isDownloading ? (
+                          <>
+                            <FaSpinner className="mr-1 animate-spin" /> Processing...
+                          </>
+                        ) : (
+                          <>
+                            <FaDownload className="mr-1" /> Download PDF
+                          </>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Individual Paycheck Detail Modal */}
-      <PaycheckModal 
-        isOpen={isPaycheckDetailModalOpen} 
-        onClose={closePaycheckDetailModal} 
-        paycheck={viewingPaycheck} 
-      />
-    </div>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { FaArrowLeft, FaCheck, FaTimes, FaFileAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaCheck, FaTimes, FaFileAlt, FaUserCircle } from 'react-icons/fa';
 import { getJobById } from '../services/jobService';
 import { getJobApplications, approveJobApplication, rejectJobApplication } from '../services/applicationService';
+import ApplicantDetailsModal from './ApplicantDetailsModal';
 
 const EmployerJobApplicants = () => {
   const { jobId } = useParams();
@@ -14,6 +15,8 @@ const EmployerJobApplicants = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedApplicant, setSelectedApplicant] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -182,7 +185,20 @@ const EmployerJobApplicants = () => {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold text-lg">{application.userEmail}</h3>
+                      <div className="flex items-center">
+                        <h3 className="font-semibold text-lg">{application.userEmail}</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                          onClick={() => {
+                            setSelectedApplicant(application);
+                            setIsDetailsModalOpen(true);
+                          }}
+                        >
+                          <FaUserCircle className="mr-1" /> View Details
+                        </Button>
+                      </div>
                       <p className="text-gray-600">
                         {jobId === 'all' ? application.jobTitle : 'Applied for this position'}
                       </p>
@@ -237,6 +253,13 @@ const EmployerJobApplicants = () => {
           </div>
         )}
       </div>
+      
+      {/* Applicant Details Modal */}
+      <ApplicantDetailsModal 
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        application={selectedApplicant}
+      />
     </div>
   );
 };

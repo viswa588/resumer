@@ -14,6 +14,7 @@ import { initializeSamplePaychecks } from '../services/paycheckService';
 import { hasApprovedApplications, getApprovedJobIds } from '../services/applicationService';
 import { hasApprovedTimesheets, getApprovedTimesheetsByUser } from '../services/timesheetService';
 import { getUserProfile, saveUserProfile, initializeUserData } from '../services/userService';
+import { saveResume, getResume, deleteResume } from '../services/resumeService';
 import logo from '../assets/icon.png';
 import { jobs } from '../data/jobs';
 import { calculateHours } from '../lib/hourUtils';
@@ -88,27 +89,31 @@ const Profile = () => {
         // Load approved timesheets
         const approvedTimesheets = getApprovedTimesheetsByUser(userEmail);
         setTimesheets(approvedTimesheets);
-        
-        // Load paychecks from localStorage if they exist
-        const savedPaychecks = JSON.parse(localStorage.getItem('userPaychecks') || '[]');
-        if (savedPaychecks.length > 0) {
-          setPaychecks(savedPaychecks);
-          
-          // Set new paychecks count
-          const viewedPaychecks = JSON.parse(localStorage.getItem('viewedPaychecks') || '[]');
-          const newPaychecks = savedPaychecks.filter(p => !viewedPaychecks.includes(p.id));
-          setNewPaychecksCount(newPaychecks.length);
-        }
       } else {
-        // No approved timesheets, clear timesheets and paychecks
+        // No approved timesheets, clear timesheets
         setTimesheets([]);
-        setPaychecks([]);
       }
     } else {
-      // No approved jobs, clear accepted jobs, timesheets, and paychecks
+      // No approved jobs, clear accepted jobs and timesheets
       setAcceptedJobs([]);
       setTimesheets([]);
+    }
+    
+    // Always load paychecks directly from localStorage
+    const savedPaychecks = JSON.parse(localStorage.getItem('userPaychecks') || '[]');
+    // Filter paychecks for this user
+    const userPaychecks = savedPaychecks.filter(p => !p.userId || p.userId === userEmail);
+    
+    if (userPaychecks.length > 0) {
+      setPaychecks(userPaychecks);
+      
+      // Set new paychecks count
+      const viewedPaychecks = JSON.parse(localStorage.getItem('viewedPaychecks') || '[]');
+      const newPaychecks = userPaychecks.filter(p => !viewedPaychecks.includes(p.id));
+      setNewPaychecksCount(newPaychecks.length);
+    } else {
       setPaychecks([]);
+      setNewPaychecksCount(0);
     }
     
     // Load applied jobs from localStorage
@@ -134,26 +139,32 @@ const Profile = () => {
   };
   
   const handlePaychecksModalOpen = () => {
+    // Get current user email
+    const userEmail = userProfile.email || localStorage.getItem('userEmail') || '';
+    
+    // Load paychecks directly from localStorage
+    const savedPaychecks = JSON.parse(localStorage.getItem('userPaychecks') || '[]');
+    
+    // Filter paychecks for this user if needed
+    const userPaychecks = savedPaychecks.filter(p => !p.userId || p.userId === userEmail);
+    
+    // Update state with the latest paychecks
+    setPaychecks(userPaychecks);
+    
     if (!hasApprovedJobs) {
       // Show message that no paychecks are available until job is approved
       alert('No paychecks available. Your job application needs to be approved by an employer first.');
       return;
     }
     
-    if (!hasTimesheets) {
-      // Show message that no paychecks are available until timesheet is approved
-      alert('No paychecks available. You need to submit timesheets and have them approved by an employer first.');
-      return;
-    }
-    
-    if (paychecks.length === 0) {
+    if (userPaychecks.length === 0) {
       alert('No paychecks available yet. Your employer needs to process your approved timesheets.');
       return;
     }
     
     setIsPaychecksModalOpen(true);
     // Mark all paychecks as viewed
-    const payCheckIds = paychecks.map(p => p.id);
+    const payCheckIds = userPaychecks.map(p => p.id);
     localStorage.setItem('viewedPaychecks', JSON.stringify(payCheckIds));
     setNewPaychecksCount(0);
   };
@@ -203,19 +214,26 @@ const Profile = () => {
         setResume(resumeData);
         setResumeFileName(file.name);
         
-        // Save to localStorage
-        localStorage.setItem('userResume', resumeData);
-        localStorage.setItem('userResumeFileName', file.name);
+        // Get current user email
+        const userEmail = userProfile.email || localStorage.getItem('userEmail') || '';
+        
+        // Save resume using resumeService
+        saveResume(userEmail, resumeData, file.name);
       };
       reader.readAsDataURL(file);
     }
   };
   
   const handleResumeDelete = () => {
+    // Get current user email
+    const userEmail = userProfile.email || localStorage.getItem('userEmail') || '';
+    
+    // Delete resume using resumeService
+    deleteResume(userEmail);
+    
+    // Update UI
     setResume(null);
     setResumeFileName('');
-    localStorage.removeItem('userResume');
-    localStorage.removeItem('userResumeFileName');
   };
 
   const handleResumeView = () => {

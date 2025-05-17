@@ -273,6 +273,155 @@ export const sampleJobApplications = [
   }
 ];
 
+// Sample notifications
+export const sampleAlerts = [
+  {
+    id: 1001,
+    timestamp: "2023-12-16T14:25:00Z",
+    read: false,
+    type: 'job-offer',
+    title: 'Job Application Approved',
+    message: 'Congratulations! Your application for Frontend Developer at Tech Innovations Inc. has been approved.',
+    jobId: 1
+  },
+  {
+    id: 1002,
+    timestamp: "2023-12-17T11:15:00Z",
+    read: false,
+    type: 'job-offer',
+    title: 'Job Application Approved',
+    message: 'Congratulations! Your application for Backend Developer at Tech Innovations Inc. has been approved.',
+    jobId: 2
+  },
+  {
+    id: 1003,
+    timestamp: "2023-12-19T14:05:00Z",
+    read: false,
+    type: 'timesheet-approved',
+    title: 'Timesheet Approved',
+    message: 'Your timesheet for 12/11/2023 - 12/17/2023 has been approved.',
+    timesheetId: 1
+  },
+  {
+    id: 1004,
+    timestamp: "2023-12-26T14:35:00Z",
+    read: false,
+    type: 'timesheet-approved',
+    title: 'Timesheet Approved',
+    message: 'Your timesheet for 12/18/2023 - 12/24/2023 has been approved.',
+    timesheetId: 2
+  },
+  {
+    id: 1005,
+    timestamp: "2023-12-20T10:00:00Z",
+    read: false,
+    type: 'paycheck-generated',
+    title: 'Paycheck Generated',
+    message: 'A paycheck for $1000.00 has been generated for your approved timesheet.',
+    paycheckId: 101
+  },
+  {
+    id: 1006,
+    timestamp: "2023-12-27T11:00:00Z",
+    read: false,
+    type: 'paycheck-generated',
+    title: 'Paycheck Generated',
+    message: 'A paycheck for $875.00 has been generated for your approved timesheet.',
+    paycheckId: 102
+  }
+];
+
+export const sampleEmails = [
+  {
+    id: 2001,
+    timestamp: "2023-12-16T14:25:00Z",
+    read: false,
+    type: 'job-offer',
+    subject: 'Job Application Approved: Frontend Developer',
+    from: 'Tech Innovations Inc. <hr@techinnovationsinc.com>',
+    message: 'Congratulations! Your application for the Frontend Developer position at Tech Innovations Inc. has been approved. You can now submit timesheets for this position.',
+    jobId: 1
+  },
+  {
+    id: 2002,
+    timestamp: "2023-12-17T11:15:00Z",
+    read: false,
+    type: 'job-offer',
+    subject: 'Job Application Approved: Backend Developer',
+    from: 'Tech Innovations Inc. <hr@techinnovationsinc.com>',
+    message: 'Congratulations! Your application for the Backend Developer position at Tech Innovations Inc. has been approved. You can now submit timesheets for this position.',
+    jobId: 2
+  },
+  {
+    id: 2003,
+    timestamp: "2023-12-19T14:05:00Z",
+    read: false,
+    type: 'timesheet-approved',
+    subject: 'Timesheet Approved: 12/11/2023 - 12/17/2023',
+    from: 'Timesheet System <timesheet@company.com>',
+    message: 'Your timesheet for 12/11/2023 - 12/17/2023 has been approved. Payment will be processed according to the regular payment schedule.',
+    timesheetId: 1
+  },
+  {
+    id: 2004,
+    timestamp: "2023-12-26T14:35:00Z",
+    read: false,
+    type: 'timesheet-approved',
+    subject: 'Timesheet Approved: 12/18/2023 - 12/24/2023',
+    from: 'Timesheet System <timesheet@company.com>',
+    message: 'Your timesheet for 12/18/2023 - 12/24/2023 has been approved. Payment will be processed according to the regular payment schedule.',
+    timesheetId: 2
+  },
+  {
+    id: 2005,
+    timestamp: "2023-12-20T10:00:00Z",
+    read: false,
+    type: 'paycheck-generated',
+    subject: 'Paycheck Generated: $1000.00',
+    from: 'Payroll System <payroll@company.com>',
+    message: 'A paycheck for $1000.00 has been generated for your approved timesheet for the period 12/11/2023 - 12/17/2023. You can view and download your paycheck from your profile.',
+    paycheckId: 101
+  },
+  {
+    id: 2006,
+    timestamp: "2023-12-27T11:00:00Z",
+    read: false,
+    type: 'paycheck-generated',
+    subject: 'Paycheck Generated: $875.00',
+    from: 'Payroll System <payroll@company.com>',
+    message: 'A paycheck for $875.00 has been generated for your approved timesheet for the period 12/18/2023 - 12/24/2023. You can view and download your paycheck from your profile.',
+    paycheckId: 102
+  }
+];
+
+// Sample paychecks
+export const samplePaychecks = [
+  {
+    id: 101,
+    timesheetId: 1,
+    userId: "student@re.com",
+    jobId: 1,
+    period: "Dec 11, 2023 - Dec 17, 2023",
+    amount: "$1000.00",
+    status: "Paid",
+    date: "2023-12-20",
+    jobTitle: "Frontend Developer",
+    weekEnding: "2023-12-17"
+  },
+  {
+    id: 102,
+    timesheetId: 2,
+    userId: "student@re.com",
+    jobId: 1,
+    period: "Dec 18, 2023 - Dec 24, 2023",
+    amount: "$875.00",
+    status: "Paid",
+    date: "2023-12-27",
+    jobTitle: "Frontend Developer",
+    weekEnding: "2023-12-24"
+  }
+];
+
 // Initialize localStorage with sample data if it doesn't exist
 export const initializeSampleData = () => {
   // Initialize job applicants
@@ -291,31 +440,9 @@ export const initializeSampleData = () => {
   localStorage.setItem('appliedJobs', JSON.stringify([1, 2, 3]));
   
   // Initialize user paychecks
-  const paychecks = [
-    {
-      id: 1,
-      timesheetId: 1,
-      userId: "student@re.com",
-      jobId: 1,
-      period: "Dec 11, 2023 - Dec 17, 2023",
-      amount: "$1000.00",
-      status: "Paid",
-      date: "2023-12-20",
-      jobTitle: "Frontend Developer",
-      weekEnding: "2023-12-17"
-    },
-    {
-      id: 2,
-      timesheetId: 2,
-      userId: "student@re.com",
-      jobId: 1,
-      period: "Dec 18, 2023 - Dec 24, 2023",
-      amount: "$875.00",
-      status: "Paid",
-      date: "2023-12-27",
-      jobTitle: "Frontend Developer",
-      weekEnding: "2023-12-24"
-    }
-  ];
-  localStorage.setItem('userPaychecks', JSON.stringify(paychecks));
+  localStorage.setItem('userPaychecks', JSON.stringify(samplePaychecks));
+  
+  // Initialize notifications
+  localStorage.setItem('userAlerts', JSON.stringify(sampleAlerts));
+  localStorage.setItem('userEmails', JSON.stringify(sampleEmails));
 };
