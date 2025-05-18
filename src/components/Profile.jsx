@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf, FaFileInvoiceDollar, FaClipboardList } from 'react-icons/fa';
+import { FaHome, FaBell, FaEnvelope, FaCamera, FaSearch, FaHistory, FaRobot, FaCertificate, FaVideo, FaFileAlt, FaSignOutAlt, FaFileUpload, FaFilePdf, FaFileInvoiceDollar, FaClipboardList, FaPencilAlt, FaChartLine } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import HistoryModal from './HistoryModal';
 import JobCard from './JobCard';
 import JobModal from './JobModal';
 import VideoRecordModal from './VideoRecordModal';
 import PaychecksModal from './PaychecksModal';
+import ResumeTemplateModal from './ResumeTemplateModal';
+import ResumeValidationModal from './ResumeValidationModal';
+import ProfileScoreCard from './ProfileScoreCard';
+import ProfileScoreModal from './ProfileScoreModal';
 import NotificationDropdown from './NotificationDropdown';
 import NotificationBadge from './NotificationBadge';
 import PaycheckBadge from './PaycheckBadge';
@@ -15,6 +19,7 @@ import { hasApprovedApplications, getApprovedJobIds } from '../services/applicat
 import { hasApprovedTimesheets, getApprovedTimesheetsByUser } from '../services/timesheetService';
 import { getUserProfile, saveUserProfile, initializeUserData } from '../services/userService';
 import { saveResume, getResume, deleteResume } from '../services/resumeService';
+import { getResumeScore } from '../services/resumeValidationService';
 import logo from '../assets/icon.png';
 import { jobs } from '../data/jobs';
 import { calculateHours } from '../lib/hourUtils';
@@ -30,10 +35,28 @@ const Profile = () => {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [isPaychecksModalOpen, setIsPaychecksModalOpen] = useState(false);
+  const [isResumeTemplateModalOpen, setIsResumeTemplateModalOpen] = useState(false);
+  const [isProfileScoreModalOpen, setIsProfileScoreModalOpen] = useState(false);
+  const [isResumeValidationModalOpen, setIsResumeValidationModalOpen] = useState(false);
   const [acceptedJobs, setAcceptedJobs] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
   const [resume, setResume] = useState(null);
   const [resumeFileName, setResumeFileName] = useState('');
+  const [resumeData, setResumeData] = useState(null);
+  const [resumeValidationResults, setResumeValidationResults] = useState(null);
+  const [profileScore, setProfileScore] = useState({
+    total: 0,
+    details: {
+      hasResume: false,
+      hasProfilePicture: false,
+      hasAbout: false,
+      hasContact: false,
+      resumeCompleteness: 0,
+      resumeQuality: 0,
+      skillsMatch: 0,
+      improvements: []
+    }
+  });
   const [showAlertDropdown, setShowAlertDropdown] = useState(false);
   const [showEmailDropdown, setShowEmailDropdown] = useState(false);
   const [paychecks, setPaychecks] = useState([]);
@@ -127,6 +150,16 @@ const Profile = () => {
     if (savedResume) {
       setResume(savedResume);
       setResumeFileName(savedResumeFileName || 'resume.pdf');
+      
+      // Load resume template data if it exists
+      const savedResumeTemplate = localStorage.getItem(`resumeTemplate_${userEmail}`);
+      if (savedResumeTemplate) {
+        try {
+          setResumeData(JSON.parse(savedResumeTemplate));
+        } catch (error) {
+          console.error('Error parsing resume template data:', error);
+        }
+      }
     }
   }, []);
 
@@ -221,6 +254,39 @@ const Profile = () => {
         saveResume(userEmail, resumeData, file.name);
       };
       reader.readAsDataURL(file);
+    }
+  };
+  
+  const handleOpenResumeTemplateModal = () => {
+    setIsResumeTemplateModalOpen(true);
+  };
+  
+  const handleCloseResumeTemplateModal = () => {
+    setIsResumeTemplateModalOpen(false);
+  };
+  
+  const handleSaveResume = (data) => {
+    // Get current user email
+    const userEmail = userProfile.email || localStorage.getItem('userEmail') || '';
+    
+    // Save the resume data
+    setResume(data.pdf);
+    setResumeFileName(`${userProfile.firstName || 'resume'}_${userProfile.lastName || ''}.pdf`);
+    setResumeData(data);
+    
+    // Save to resumeService
+    saveResume(userEmail, data.pdf, `${userProfile.firstName || 'resume'}_${userProfile.lastName || ''}.pdf`);
+    
+    // Save template data to localStorage
+    localStorage.setItem(`resumeTemplate_${userEmail}`, JSON.stringify({
+      template: data.template,
+      data: data.data
+    }));
+    
+    // Update profile score after saving resume
+    const profileScoreCard = document.querySelector('#profile-score-card');
+    if (profileScoreCard && profileScoreCard.calculateScore) {
+      profileScoreCard.calculateScore();
     }
   };
   
@@ -351,6 +417,25 @@ const Profile = () => {
       </div>
       <VideoRecordModal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} />
       <PaychecksModal isOpen={isPaychecksModalOpen} onClose={handlePaychecksModalClose} paychecks={paychecks} />
+      <ResumeTemplateModal 
+        isOpen={isResumeTemplateModalOpen} 
+        onClose={handleCloseResumeTemplateModal} 
+        onSave={handleSaveResume}
+        userData={userProfile}
+      />
+      <ProfileScoreModal
+        isOpen={isProfileScoreModalOpen}
+        onClose={() => setIsProfileScoreModalOpen(false)}
+        score={profileScore}
+        resume={resume}
+        userProfile={userProfile}
+      />
+      <ResumeValidationModal
+        isOpen={isResumeValidationModalOpen}
+        onClose={() => setIsResumeValidationModalOpen(false)}
+        resumeData={resumeData?.data}
+        resumePdf={resume}
+      />
       
       {/* Profile Content */}
       <div className="container mx-auto px-4 space-y-4">
@@ -573,9 +658,30 @@ const Profile = () => {
                 <p className="text-sm md:text-base text-gray-600">{userProfile.email || "user@example.com"}</p>
               </div>
               
+              {/* Profile Score Section */}
+              <div className="w-full mt-6 border-t pt-4">
+                <ProfileScoreCard 
+                  id="profile-score-card"
+                  resume={resume} 
+                  userProfile={userProfile} 
+                  onViewDetails={() => setIsProfileScoreModalOpen(true)}
+                  onScoreUpdate={setProfileScore}
+                />
+              </div>
+              
               {/* Resume Upload Section */}
               <div className="mt-6 border-t pt-4">
-                <h3 className="text-md font-semibold mb-3">Resume</h3>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-md font-semibold">Resume</h3>
+                  {resume && (
+                    <button
+                      onClick={() => setIsResumeValidationModalOpen(true)}
+                      className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                    >
+                      <FaRobot className="mr-1" /> Validate Resume
+                    </button>
+                  )}
+                </div>
                 {resume ? (
                   <div className="flex flex-col items-center">
                     <div className="flex items-center justify-center bg-gray-100 p-3 rounded-lg w-full mb-2">
@@ -590,6 +696,12 @@ const Profile = () => {
                         <FaFileAlt className="mr-1" /> View
                       </button>
                       <button 
+                        onClick={handleOpenResumeTemplateModal}
+                        className="bg-green-500 text-white px-3 py-1 rounded-md text-sm flex items-center"
+                      >
+                        <FaPencilAlt className="mr-1" /> Edit
+                      </button>
+                      <button 
                         onClick={handleResumeDelete}
                         className="bg-red-500 text-white px-3 py-1 rounded-md text-sm"
                       >
@@ -598,7 +710,7 @@ const Profile = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center space-y-3">
                     <label htmlFor="resume-upload" className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 p-4 rounded-lg flex flex-col items-center w-full">
                       <FaFileUpload className="text-3xl mb-2" />
                       <span className="text-sm font-medium">Upload Resume (PDF)</span>
@@ -610,7 +722,13 @@ const Profile = () => {
                         onChange={handleResumeUpload}
                       />
                     </label>
-                    <p className="text-xs text-gray-500 mt-2">Max file size: 5MB</p>
+                    <button
+                      onClick={handleOpenResumeTemplateModal}
+                      className="bg-green-500 text-white px-4 py-2 rounded-md text-sm flex items-center justify-center w-full"
+                    >
+                      <FaPencilAlt className="mr-2" /> Create Resume with Templates
+                    </button>
+                    <p className="text-xs text-gray-500">Max file size: 5MB</p>
                   </div>
                 )}
               </div>

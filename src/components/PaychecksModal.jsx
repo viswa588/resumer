@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { FaFileInvoiceDollar, FaDownload, FaPrint, FaSpinner } from 'react-icons/fa';
+import html2pdf from 'html2pdf.js';
 
 const PaychecksModal = ({ isOpen, onClose, paychecks = [] }) => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -158,24 +159,26 @@ const PaychecksModal = ({ isOpen, onClose, paychecks = [] }) => {
     `;
     
     // Use html2pdf to convert the HTML to PDF
-    import('html2pdf.js').then(html2pdfModule => {
-      const html2pdf = html2pdfModule.default;
-      const opt = {
-        margin: 10,
-        filename: `Paycheck-${paycheck.period.replace(/\s/g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().from(container).set(opt).save().then(() => {
+    const opt = {
+      margin: 10,
+      filename: `Paycheck-${paycheck.period.replace(/\s/g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf()
+      .from(container)
+      .set(opt)
+      .save()
+      .then(() => {
+        setIsDownloading(false);
+      })
+      .catch(err => {
+        console.error('Error generating PDF:', err);
+        alert('Failed to generate PDF. Please try again.');
         setIsDownloading(false);
       });
-    }).catch(err => {
-      console.error('Error loading html2pdf:', err);
-      alert('Failed to generate PDF. Please try again.');
-      setIsDownloading(false);
-    });
   };
 
   return (
