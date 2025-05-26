@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 // Create the context
 const NotificationContext = createContext();
@@ -12,24 +13,68 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [alerts, setAlerts] = useState([]);
   const [emails, setEmails] = useState([]);
+  const { currentUser } = useAuth() || {};
   
-  // Load notifications from localStorage on initial load
+  // Load notifications from localStorage on initial load or when user changes
   useEffect(() => {
-    const savedAlerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
-    const savedEmails = JSON.parse(localStorage.getItem('userEmails') || '[]');
-    
-    setAlerts(savedAlerts);
-    setEmails(savedEmails);
-  }, []);
+    if (currentUser && currentUser.email) {
+      // Try to load user-specific notifications first
+      const userAlertsKey = `userAlerts_${currentUser.email}`;
+      const userEmailsKey = `userEmails_${currentUser.email}`;
+      
+      const savedUserAlerts = JSON.parse(localStorage.getItem(userAlertsKey) || '[]');
+      const savedUserEmails = JSON.parse(localStorage.getItem(userEmailsKey) || '[]');
+      
+      if (savedUserAlerts.length > 0 || savedUserEmails.length > 0) {
+        // Use user-specific notifications if they exist
+        setAlerts(savedUserAlerts);
+        setEmails(savedUserEmails);
+      } else {
+        // Fall back to global notifications and filter by user email
+        const allAlerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
+        const allEmails = JSON.parse(localStorage.getItem('userEmails') || '[]');
+        
+        const userAlerts = allAlerts.filter(alert => 
+          alert.userEmail === currentUser.email || !alert.userEmail
+        );
+        
+        const userEmails = allEmails.filter(email => 
+          email.userEmail === currentUser.email || !email.userEmail
+        );
+        
+        setAlerts(userAlerts);
+        setEmails(userEmails);
+      }
+    } else {
+      // If no user is logged in, load all notifications (for backward compatibility)
+      const savedAlerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
+      const savedEmails = JSON.parse(localStorage.getItem('userEmails') || '[]');
+      
+      setAlerts(savedAlerts);
+      setEmails(savedEmails);
+    }
+  }, [currentUser]);
 
   // Save notifications to localStorage whenever they change
   useEffect(() => {
+    if (currentUser && currentUser.email) {
+      // Save to user-specific storage
+      const userAlertsKey = `userAlerts_${currentUser.email}`;
+      localStorage.setItem(userAlertsKey, JSON.stringify(alerts));
+    }
+    // Also update global storage for backward compatibility
     localStorage.setItem('userAlerts', JSON.stringify(alerts));
-  }, [alerts]);
+  }, [alerts, currentUser]);
 
   useEffect(() => {
+    if (currentUser && currentUser.email) {
+      // Save to user-specific storage
+      const userEmailsKey = `userEmails_${currentUser.email}`;
+      localStorage.setItem(userEmailsKey, JSON.stringify(emails));
+    }
+    // Also update global storage for backward compatibility
     localStorage.setItem('userEmails', JSON.stringify(emails));
-  }, [emails]);
+  }, [emails, currentUser]);
 
   // Add a new alert notification
   const addAlert = (alert) => {
@@ -37,7 +82,8 @@ export const NotificationProvider = ({ children }) => {
       id: Date.now(),
       timestamp: new Date().toISOString(),
       read: false,
-      ...alert
+      ...alert,
+      userEmail: currentUser?.email // Add user email for identification
     };
     setAlerts(prevAlerts => [newAlert, ...prevAlerts]);
     return newAlert.id;
@@ -49,7 +95,8 @@ export const NotificationProvider = ({ children }) => {
       id: Date.now(),
       timestamp: new Date().toISOString(),
       read: false,
-      ...email
+      ...email,
+      userEmail: currentUser?.email // Add user email for identification
     };
     setEmails(prevEmails => [newEmail, ...prevEmails]);
     return newEmail.id;

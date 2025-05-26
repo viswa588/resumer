@@ -25,12 +25,17 @@ import UserProfile from './components/UserProfile';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import NotificationTest from './components/NotificationTest';
+import JobSeekerNotificationHandler from './components/JobSeekerNotificationHandler';
+import JobSeekerDashboard from './components/JobSeekerDashboard';
 
 // Employer components
 import EmployerLogin from './components/EmployerLogin';
 import EmployerDashboard from './components/EmployerDashboard';
 import EmployerJobManagement from './components/EmployerJobManagement';
 import EmployerJobApplicants from './components/EmployerJobApplicants';
+
+import NewDashboardPage from './NewDashboardPage';
+import InterviewDetails from './components/InterviewDetails';
 
 // Auth Context
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -68,6 +73,11 @@ function AppRoutes() {
       <Route path="/timesheet/edit/:id" element={<TimeSheetEntry />} />
       <Route path="/timesheet/view/:id" element={<TimeSheetView />} />    
       <Route path="/notification-test" element={<NotificationTest />} />
+      <Route path="/jobseeker-dashboard" element={<JobSeekerDashboard />} />
+     
+      <Route path="/new-dashboard" element={<NewDashboardPage />} />
+      <Route path="/ai-interviews" element={<NewDashboardPage initialTab="interviews" />} />
+      <Route path="/interview-details/:id" element={<InterviewDetails />} />
 
       {/* Employer Routes */}
       <Route path="/employer-dashboard" element={<EmployerDashboard />} />
@@ -88,6 +98,7 @@ function App() {
       <AuthProvider>
         <NotificationProvider>
           <div className="App min-h-screen bg-gradient-to-r from-red-100 via-blue-100 to-white text-slate-800">
+            <JobSeekerNotificationHandler />
             <AppRoutes />
           </div>
         </NotificationProvider>

@@ -369,7 +369,11 @@ const Profile = () => {
         <div className="container mx-auto flex justify-between items-center px-2">
           <img src={logo} alt="Profile Logo" className="h-15 w-12" />
           <div className="flex space-x-3 md:space-x-4">
-            <FaHome className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500" />
+            <FaHome 
+              className="text-xl md:text-2xl text-gray-600 cursor-pointer hover:text-blue-500"
+              onClick={() => navigate('/jobseeker-dashboard')}
+              title="Dashboard"
+            />
             
             {/* Alert Bell with Badge */}
             <div className="relative">

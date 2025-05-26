@@ -5,16 +5,17 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Chip } from './ui/chip';
-import { FaFileAlt, FaDownload, FaEdit, FaCheck, FaRobot, FaLightbulb, FaCamera, FaPlus, FaTrash, FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa';
+import { FaFileAlt, FaDownload, FaEdit, FaCheck, FaLightbulb } from 'react-icons/fa';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import ResumeChatbot from './ResumeChatbot';
 import { resumeTemplates } from './ResumeTemplates';
+import PhotoUploadSection from './PhotoUploadSection';
+import ProjectsSection from './ProjectsSection';
+import FooterSection from './FooterSection';
+import SkillsSection from './SkillsSection';
 
-// Using imported templates from ResumeTemplates.js
-
-const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
+const ResumeTemplateModalUpdated = ({ isOpen, onClose, onSave, userData = {} }) => {
   const [selectedTemplate, setSelectedTemplate] = useState('professional');
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [activeChatbotSection, setActiveChatbotSection] = useState('');
@@ -48,32 +49,10 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'skills') {
-      // Parse skills into an array for chips display
-      const skillsList = value.split(',').map(skill => skill.trim()).filter(Boolean);
-      setResumeData({
-        ...resumeData,
-        [name]: value,
-        skillsList
-      });
-    } else {
-      setResumeData({
-        ...resumeData,
-        [name]: value
-      });
-    }
-  };
-  
-  const handlePhotoUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePhoto(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    setResumeData({
+      ...resumeData,
+      [name]: value
+    });
   };
   
   const handleArrayInputChange = (type, index, field, value) => {
@@ -96,45 +75,40 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
         ...resumeData,
         experience: [...resumeData.experience, { company: '', position: '', year: '', description: '' }]
       });
-    } else if (type === 'projects') {
-      setResumeData({
-        ...resumeData,
-        projects: [...resumeData.projects, { name: '', role: '', year: '', description: '' }]
-      });
-    } else if (type === 'links') {
-      setResumeData({
-        ...resumeData,
-        footer: {
-          ...resumeData.footer,
-          links: [...resumeData.footer.links, { label: '', url: '' }]
-        }
-      });
     }
   };
   
   const removeItem = (type, index) => {
-    if (type === 'links') {
-      if (resumeData.footer.links.length <= 1) return;
-      
-      const updatedLinks = [...resumeData.footer.links];
-      updatedLinks.splice(index, 1);
-      setResumeData({
-        ...resumeData,
-        footer: {
-          ...resumeData.footer,
-          links: updatedLinks
-        }
-      });
-    } else {
-      if (resumeData[type].length <= 1) return;
-      
-      const updatedArray = [...resumeData[type]];
-      updatedArray.splice(index, 1);
-      setResumeData({
-        ...resumeData,
-        [type]: updatedArray
-      });
-    }
+    if (resumeData[type].length <= 1) return;
+    
+    const updatedArray = [...resumeData[type]];
+    updatedArray.splice(index, 1);
+    setResumeData({
+      ...resumeData,
+      [type]: updatedArray
+    });
+  };
+  
+  const handleProjectsChange = (projects) => {
+    setResumeData({
+      ...resumeData,
+      projects
+    });
+  };
+  
+  const handleFooterChange = (footer) => {
+    setResumeData({
+      ...resumeData,
+      footer
+    });
+  };
+  
+  const handleSkillsChange = (skills, skillsList) => {
+    setResumeData({
+      ...resumeData,
+      skills,
+      skillsList
+    });
   };
   
   const handleSave = () => {
@@ -169,14 +143,6 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
     setIsChatbotOpen(true);
   };
   
-  // Update profile score when saving resume
-  const updateProfileScore = () => {
-    // This would be called after saving the resume
-    if (typeof window !== 'undefined' && window.updateProfileScore) {
-      window.updateProfileScore();
-    }
-  };
-  
   const handleChatbotSuggestion = (suggestion) => {
     // Extract content from the suggestion
     let content = suggestion;
@@ -205,7 +171,9 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
       updatedEducation[0] = {...updatedEducation[0], description: content};
       setResumeData({...resumeData, education: updatedEducation});
     } else if (activeChatbotSection === 'skills') {
-      setResumeData({...resumeData, skills: content});
+      // Parse skills into an array for chips display
+      const skillsList = content.split(',').map(skill => skill.trim()).filter(Boolean);
+      setResumeData({...resumeData, skills: content, skillsList});
     }
   };
   
@@ -221,188 +189,9 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
       });
       
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(`${resumeData.name.replace(/\s+/g, '_')}_resume.pdf`);
+      pdf.save(`${resumeData.name.replace(/\\s+/g, '_')}_resume.pdf`);
     });
   };
-  
-  const renderProfessionalTemplate = () => (
-    <div className="bg-white p-8 shadow-lg" style={{ fontFamily: 'Arial, sans-serif' }}>
-      <div className="border-b-2 border-blue-500 pb-4 mb-6">
-        <h1 className="text-3xl font-bold text-blue-800">{resumeData.name}</h1>
-        <div className="flex flex-wrap gap-4 mt-2 text-gray-600">
-          {resumeData.email && <div>{resumeData.email}</div>}
-          {resumeData.phone && <div>{resumeData.phone}</div>}
-          {resumeData.address && <div>{resumeData.address}</div>}
-        </div>
-      </div>
-      
-      {resumeData.summary && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-blue-700 mb-2">Professional Summary</h2>
-          <p className="text-gray-700">{resumeData.summary}</p>
-        </div>
-      )}
-      
-      {resumeData.experience.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-blue-700 mb-2">Experience</h2>
-          {resumeData.experience.map((exp, index) => (
-            <div key={index} className="mb-4">
-              <div className="flex justify-between">
-                <h3 className="font-bold">{exp.position}</h3>
-                <span className="text-gray-600">{exp.year}</span>
-              </div>
-              <div className="text-gray-700">{exp.company}</div>
-              <p className="mt-1 text-gray-600">{exp.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {resumeData.education.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-blue-700 mb-2">Education</h2>
-          {resumeData.education.map((edu, index) => (
-            <div key={index} className="mb-4">
-              <div className="flex justify-between">
-                <h3 className="font-bold">{edu.degree}</h3>
-                <span className="text-gray-600">{edu.year}</span>
-              </div>
-              <div className="text-gray-700">{edu.school}</div>
-              <p className="mt-1 text-gray-600">{edu.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {resumeData.skills && (
-        <div>
-          <h2 className="text-xl font-semibold text-blue-700 mb-2">Skills</h2>
-          <p className="text-gray-700">{resumeData.skills}</p>
-        </div>
-      )}
-    </div>
-  );
-  
-  const renderCreativeTemplate = () => (
-    <div className="bg-white" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
-      <div className="bg-purple-700 text-white p-8">
-        <h1 className="text-4xl font-bold">{resumeData.name}</h1>
-        <div className="flex flex-wrap gap-4 mt-3 text-purple-100">
-          {resumeData.email && <div>{resumeData.email}</div>}
-          {resumeData.phone && <div>{resumeData.phone}</div>}
-          {resumeData.address && <div>{resumeData.address}</div>}
-        </div>
-      </div>
-      
-      <div className="p-8">
-        {resumeData.summary && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-purple-700 mb-3 border-b-2 border-purple-300 pb-1">About Me</h2>
-            <p className="text-gray-700">{resumeData.summary}</p>
-          </div>
-        )}
-        
-        {resumeData.experience.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-purple-700 mb-3 border-b-2 border-purple-300 pb-1">Experience</h2>
-            {resumeData.experience.map((exp, index) => (
-              <div key={index} className="mb-5">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-                  <h3 className="text-xl font-bold text-purple-600">{exp.position}</h3>
-                  <span className="text-purple-500 font-medium">{exp.year}</span>
-                </div>
-                <div className="text-lg text-gray-700 font-medium">{exp.company}</div>
-                <p className="mt-2 text-gray-600">{exp.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {resumeData.education.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-purple-700 mb-3 border-b-2 border-purple-300 pb-1">Education</h2>
-            {resumeData.education.map((edu, index) => (
-              <div key={index} className="mb-5">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-                  <h3 className="text-xl font-bold text-purple-600">{edu.degree}</h3>
-                  <span className="text-purple-500 font-medium">{edu.year}</span>
-                </div>
-                <div className="text-lg text-gray-700 font-medium">{edu.school}</div>
-                <p className="mt-2 text-gray-600">{edu.description}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {resumeData.skills && (
-          <div>
-            <h2 className="text-2xl font-bold text-purple-700 mb-3 border-b-2 border-purple-300 pb-1">Skills</h2>
-            <p className="text-gray-700">{resumeData.skills}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-  
-  const renderSimpleTemplate = () => (
-    <div className="bg-white p-8" style={{ fontFamily: 'Georgia, serif' }}>
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold">{resumeData.name}</h1>
-        <div className="flex flex-wrap justify-center gap-4 mt-2 text-gray-600">
-          {resumeData.email && <div>{resumeData.email}</div>}
-          {resumeData.phone && <div>{resumeData.phone}</div>}
-          {resumeData.address && <div>{resumeData.address}</div>}
-        </div>
-      </div>
-      
-      {resumeData.summary && (
-        <div className="mb-6">
-          <h2 className="text-xl font-bold mb-2 border-b border-gray-300 pb-1">Summary</h2>
-          <p className="text-gray-700 mt-2">{resumeData.summary}</p>
-        </div>
-      )}
-      
-      {resumeData.experience.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-bold mb-2 border-b border-gray-300 pb-1">Experience</h2>
-          {resumeData.experience.map((exp, index) => (
-            <div key={index} className="mb-4 mt-3">
-              <div className="flex justify-between">
-                <h3 className="font-bold">{exp.position}</h3>
-                <span className="text-gray-600">{exp.year}</span>
-              </div>
-              <div className="text-gray-700">{exp.company}</div>
-              <p className="mt-1 text-gray-600">{exp.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {resumeData.education.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-bold mb-2 border-b border-gray-300 pb-1">Education</h2>
-          {resumeData.education.map((edu, index) => (
-            <div key={index} className="mb-4 mt-3">
-              <div className="flex justify-between">
-                <h3 className="font-bold">{edu.degree}</h3>
-                <span className="text-gray-600">{edu.year}</span>
-              </div>
-              <div className="text-gray-700">{edu.school}</div>
-              <p className="mt-1 text-gray-600">{edu.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {resumeData.skills && (
-        <div>
-          <h2 className="text-xl font-bold mb-2 border-b border-gray-300 pb-1">Skills</h2>
-          <p className="text-gray-700 mt-2">{resumeData.skills}</p>
-        </div>
-      )}
-    </div>
-  );
   
   const renderSkills = (format) => {
     switch (format) {
@@ -410,7 +199,9 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
         return (
           <div className="flex flex-wrap gap-2">
             {resumeData.skillsList.map((skill, index) => (
-              <Chip key={index} variant="primary">{skill}</Chip>
+              <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                {skill}
+              </div>
             ))}
           </div>
         );
@@ -434,7 +225,7 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
                   <span>{skill}</span>
                   <div className="flex text-yellow-400">
                     {[...Array(5)].map((_, i) => (
-                      i < rating ? <FaStar key={i} /> : <FaRegStar key={i} />
+                      <span key={i} className={i < rating ? "text-yellow-400" : "text-gray-300"}>★</span>
                     ))}
                   </div>
                 </div>
@@ -497,18 +288,20 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
           )}
           
           {/* Projects */}
-          {template.hasProjects && resumeData.projects.length > 0 && (
+          {template.hasProjects && resumeData.projects.length > 0 && resumeData.projects[0].name && (
             <div className="mb-6">
               <h2 className={`text-xl font-semibold text-${template.color}-700 mb-2`}>Projects</h2>
               {resumeData.projects.map((project, index) => (
-                <div key={index} className="mb-4">
-                  <div className="flex justify-between">
-                    <h3 className="font-bold">{project.name}</h3>
-                    <span className="text-gray-600">{project.year}</span>
+                project.name && (
+                  <div key={index} className="mb-4">
+                    <div className="flex justify-between">
+                      <h3 className="font-bold">{project.name}</h3>
+                      <span className="text-gray-600">{project.year}</span>
+                    </div>
+                    <div className="text-gray-700">{project.role}</div>
+                    <p className="mt-1 text-gray-600">{project.description}</p>
                   </div>
-                  <div className="text-gray-700">{project.role}</div>
-                  <p className="mt-1 text-gray-600">{project.description}</p>
-                </div>
+                )
               ))}
             </div>
           )}
@@ -618,49 +411,58 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
               ))}
             </div>
             
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    value={resumeData.name} 
-                    onChange={handleInputChange} 
-                    placeholder="John Doe"
-                  />
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input 
+                      id="name" 
+                      name="name" 
+                      value={resumeData.name} 
+                      onChange={handleInputChange} 
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      value={resumeData.email} 
+                      onChange={handleInputChange} 
+                      placeholder="john@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input 
+                      id="phone" 
+                      name="phone" 
+                      value={resumeData.phone} 
+                      onChange={handleInputChange} 
+                      placeholder="(123) 456-7890"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Input 
+                      id="address" 
+                      name="address" 
+                      value={resumeData.address} 
+                      onChange={handleInputChange} 
+                      placeholder="City, State"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    name="email" 
-                    value={resumeData.email} 
-                    onChange={handleInputChange} 
-                    placeholder="john@example.com"
+                
+               // {resumeTemplates.find(t => t.id === selectedTemplate)?.hasPhoto && (
+                  <PhotoUploadSection 
+                    onPhotoChange={setProfilePhoto}
+                    initialPhoto={profilePhoto}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input 
-                    id="phone" 
-                    name="phone" 
-                    value={resumeData.phone} 
-                    onChange={handleInputChange} 
-                    placeholder="(123) 456-7890"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address">Address</Label>
-                  <Input 
-                    id="address" 
-                    name="address" 
-                    value={resumeData.address} 
-                    onChange={handleInputChange} 
-                    placeholder="City, State"
-                  />
-                </div>
+                )}
               </div>
               
               <div>
@@ -673,7 +475,7 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
                     className="flex items-center text-blue-600"
                     onClick={() => handleOpenChatbot('summary')}
                   >
-                    <FaRobot className="mr-1" /> Get ResumerAI Help
+                    <FaLightbulb className="mr-1" /> Get AI Help
                   </Button>
                 </div>
                 <Textarea 
@@ -697,7 +499,7 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
                       className="flex items-center text-blue-600"
                       onClick={() => handleOpenChatbot('experience')}
                     >
-                      <FaRobot className="mr-1" /> Get ResumerAI Help
+                      <FaLightbulb className="mr-1" /> Get AI Help
                     </Button>
                     <Button 
                       variant="outline" 
@@ -763,6 +565,23 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
                 ))}
               </div>
               
+              {resumeTemplates.find(t => t.id === selectedTemplate)?.hasProjects && (
+                <ProjectsSection
+                  projects={resumeData.projects}
+                  onChange={handleProjectsChange}
+                  onAdd={() => {
+                    const newProjects = [...resumeData.projects, { name: '', role: '', year: '', description: '' }];
+                    handleProjectsChange(newProjects);
+                  }}
+                  onRemove={(index) => {
+                    if (resumeData.projects.length <= 1) return;
+                    const newProjects = [...resumeData.projects];
+                    newProjects.splice(index, 1);
+                    handleProjectsChange(newProjects);
+                  }}
+                />
+              )}
+              
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium">Education</h3>
@@ -774,7 +593,7 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
                       className="flex items-center text-blue-600"
                       onClick={() => handleOpenChatbot('education')}
                     >
-                      <FaRobot className="mr-1" /> Get ResumerAI Help
+                      <FaLightbulb className="mr-1" /> Get AI Help
                     </Button>
                     <Button 
                       variant="outline" 
@@ -840,28 +659,19 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
                 ))}
               </div>
               
-              <div>
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="skills">Skills</Label>
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm"
-                    className="flex items-center text-blue-600"
-                    onClick={() => handleOpenChatbot('skills')}
-                  >
-                    <FaRobot className="mr-1" /> Get ResumerAI Help
-                  </Button>
-                </div>
-                <Textarea 
-                  id="skills" 
-                  name="skills" 
-                  value={resumeData.skills} 
-                  onChange={handleInputChange} 
-                  placeholder="List your key skills, separated by commas"
-                  rows={3}
+              <SkillsSection
+                skills={resumeData.skills}
+                skillsList={resumeData.skillsList}
+                onChange={handleSkillsChange}
+                onAIHelp={() => handleOpenChatbot('skills')}
+              />
+              
+              {resumeTemplates.find(t => t.id === selectedTemplate)?.hasFooter && (
+                <FooterSection
+                  footer={resumeData.footer}
+                  onChange={handleFooterChange}
                 />
-              </div>
+              )}
             </div>
           </TabsContent>
           
@@ -910,4 +720,4 @@ const ResumeTemplateModal = ({ isOpen, onClose, onSave, userData = {} }) => {
   );
 };
 
-export default ResumeTemplateModal;
+export default ResumeTemplateModalUpdated;

@@ -14,6 +14,7 @@ import { loginUser, USER_TYPES } from "../services/authService";
 import { saveUserProfile } from "../services/userService";
 import { initializeSampleJobs } from "../services/jobService";
 import { initializeSampleData } from "../data/sampleData";
+import { createSampleNotifications } from "../services/notificationService";
 import backgroundImage from "../assets/jobseekarbackground.jpeg";
 
 const validateEmail = (email) => {
@@ -44,6 +45,16 @@ export default function JobSeekerLogin() {
         about: "I am a passionate job seeker looking for opportunities in software development."
       });
       
+      // Store user email in localStorage for notification handling
+      localStorage.setItem('userEmail', "student@re.com");
+      localStorage.setItem('userFirstName', "John");
+      localStorage.setItem('userLastName', "Student");
+      localStorage.setItem('userRole', "jobseeker");
+      
+      // Create sample notifications for demo account
+      createSampleNotifications("student@re.com");
+      
+      // Navigate to profile page instead of dashboard
       navigate("/profile");
       return;
     }
@@ -90,6 +101,16 @@ export default function JobSeekerLogin() {
           role: "jobSeeker"
         });
         
+        // Store user email in localStorage for notification handling
+        localStorage.setItem('userEmail', email);
+        localStorage.setItem('userFirstName', result.user.firstName || "");
+        localStorage.setItem('userLastName', result.user.lastName || "");
+        localStorage.setItem('userRole', "jobseeker");
+        
+        // Create sample notifications for this user
+        createSampleNotifications(email);
+        
+        // Navigate to profile page instead of dashboard
         navigate("/profile");
       } else {
         setError(result.message);

@@ -69,6 +69,47 @@ export const submitJobApplication = (application) => {
 };
 
 /**
+ * Add notification for a specific user
+ * @param {string} userEmail - The user's email
+ * @param {Object} notification - The notification object
+ * @param {string} type - The notification type ('alert' or 'email')
+ */
+const addUserNotification = (userEmail, notification, type) => {
+  if (!userEmail) return;
+  
+  // Create user-specific key
+  const storageKey = type === 'alert' ? `userAlerts_${userEmail}` : `userEmails_${userEmail}`;
+  
+  // Get existing notifications or initialize empty array
+  const notifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+  
+  // Add new notification at the beginning
+  notifications.unshift({
+    ...notification,
+    id: Date.now() + Math.random(),
+    timestamp: new Date().toISOString(),
+    read: false
+  });
+  
+  // Save back to localStorage
+  localStorage.setItem(storageKey, JSON.stringify(notifications));
+  
+  // Also update the global notifications for backward compatibility
+  const globalKey = type === 'alert' ? 'userAlerts' : 'userEmails';
+  const globalNotifications = JSON.parse(localStorage.getItem(globalKey) || '[]');
+  
+  globalNotifications.unshift({
+    ...notification,
+    id: Date.now() + Math.random(),
+    timestamp: new Date().toISOString(),
+    read: false,
+    userEmail // Add user email for identification
+  });
+  
+  localStorage.setItem(globalKey, JSON.stringify(globalNotifications));
+};
+
+/**
  * Approve a job application
  * @param {number} applicationId - The application ID
  * @returns {Object} Result of the operation
@@ -97,37 +138,36 @@ export const approveJobApplication = (applicationId) => {
   jobOfferStatuses[applications[appIndex].jobId] = 'accepted';
   localStorage.setItem('jobOfferStatuses', JSON.stringify(jobOfferStatuses));
   
-  // Add notifications directly to localStorage
+  // Get application details
   const userEmail = applications[appIndex].userEmail;
   const jobTitle = applications[appIndex].jobTitle;
   const company = applications[appIndex].companyName;
+  const jobId = applications[appIndex].jobId;
   
   // Add alert notification
-  const alerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
-  alerts.unshift({
-    id: Date.now(),
-    timestamp: new Date().toISOString(),
-    read: false,
-    type: 'job-offer',
-    title: 'Job Application Approved',
-    message: `Congratulations! Your application for ${jobTitle} at ${company} has been approved.`,
-    jobId: applications[appIndex].jobId
-  });
-  localStorage.setItem('userAlerts', JSON.stringify(alerts));
+  addUserNotification(
+    userEmail,
+    {
+      type: 'job-offer',
+      title: 'Job Application Approved',
+      message: `Congratulations! Your application for ${jobTitle} at ${company} has been approved.`,
+      jobId: jobId
+    },
+    'alert'
+  );
   
   // Add email notification
-  const emails = JSON.parse(localStorage.getItem('userEmails') || '[]');
-  emails.unshift({
-    id: Date.now() + 1,
-    timestamp: new Date().toISOString(),
-    read: false,
-    type: 'job-offer',
-    subject: `Job Application Approved: ${jobTitle}`,
-    from: `${company} <hr@${company.toLowerCase().replace(/\s+/g, '')}.com>`,
-    message: `Congratulations! Your application for the ${jobTitle} position at ${company} has been approved. You can now submit timesheets for this position.`,
-    jobId: applications[appIndex].jobId
-  });
-  localStorage.setItem('userEmails', JSON.stringify(emails));
+  addUserNotification(
+    userEmail,
+    {
+      type: 'job-offer',
+      subject: `Job Application Approved: ${jobTitle}`,
+      from: `${company} <hr@${company.toLowerCase().replace(/\s+/g, '')}.com>`,
+      message: `Congratulations! Your application for the ${jobTitle} position at ${company} has been approved. You can now submit timesheets for this position.`,
+      jobId: jobId
+    },
+    'email'
+  );
   
   return { success: true, application: applications[appIndex] };
 };
@@ -156,37 +196,36 @@ export const rejectJobApplication = (applicationId) => {
   // Save to localStorage
   localStorage.setItem('jobApplications', JSON.stringify(applications));
   
-  // Add notifications directly to localStorage
+  // Get application details
   const userEmail = applications[appIndex].userEmail;
   const jobTitle = applications[appIndex].jobTitle;
   const company = applications[appIndex].companyName;
+  const jobId = applications[appIndex].jobId;
   
   // Add alert notification
-  const alerts = JSON.parse(localStorage.getItem('userAlerts') || '[]');
-  alerts.unshift({
-    id: Date.now(),
-    timestamp: new Date().toISOString(),
-    read: false,
-    type: 'job-rejection',
-    title: 'Job Application Rejected',
-    message: `We're sorry, but your application for ${jobTitle} at ${company} has been rejected.`,
-    jobId: applications[appIndex].jobId
-  });
-  localStorage.setItem('userAlerts', JSON.stringify(alerts));
+  addUserNotification(
+    userEmail,
+    {
+      type: 'job-rejection',
+      title: 'Job Application Rejected',
+      message: `We're sorry, but your application for ${jobTitle} at ${company} has been rejected.`,
+      jobId: jobId
+    },
+    'alert'
+  );
   
   // Add email notification
-  const emails = JSON.parse(localStorage.getItem('userEmails') || '[]');
-  emails.unshift({
-    id: Date.now() + 1,
-    timestamp: new Date().toISOString(),
-    read: false,
-    type: 'job-rejection',
-    subject: `Job Application Status: ${jobTitle}`,
-    from: `${company} <hr@${company.toLowerCase().replace(/\s+/g, '')}.com>`,
-    message: `Thank you for your interest in the ${jobTitle} position at ${company}. After careful consideration, we have decided to pursue other candidates whose qualifications better match our current needs.`,
-    jobId: applications[appIndex].jobId
-  });
-  localStorage.setItem('userEmails', JSON.stringify(emails));
+  addUserNotification(
+    userEmail,
+    {
+      type: 'job-rejection',
+      subject: `Job Application Status: ${jobTitle}`,
+      from: `${company} <hr@${company.toLowerCase().replace(/\s+/g, '')}.com>`,
+      message: `Thank you for your interest in the ${jobTitle} position at ${company}. After careful consideration, we have decided to pursue other candidates whose qualifications better match our current needs.`,
+      jobId: jobId
+    },
+    'email'
+  );
   
   return { success: true, application: applications[appIndex] };
 };

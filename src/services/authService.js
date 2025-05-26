@@ -85,6 +85,12 @@ export const loginUser = (credentials) => {
     // Store session in localStorage
     localStorage.setItem('currentUser', JSON.stringify(session));
     
+    // Store individual fields for easier access
+    localStorage.setItem('userEmail', user.email);
+    localStorage.setItem('userFirstName', user.firstName);
+    localStorage.setItem('userLastName', user.lastName);
+    localStorage.setItem('userRole', user.userType);
+    
     return { 
       success: true, 
       message: 'Login successful', 
@@ -109,7 +115,19 @@ export const loginUser = (credentials) => {
 export const getCurrentUser = () => {
   try {
     const userJson = localStorage.getItem('currentUser');
-    return userJson ? JSON.parse(userJson) : null;
+    if (!userJson) return null;
+    
+    const user = JSON.parse(userJson);
+    
+    // Ensure individual fields are set
+    if (user) {
+      localStorage.setItem('userEmail', user.email || '');
+      localStorage.setItem('userFirstName', user.firstName || '');
+      localStorage.setItem('userLastName', user.lastName || '');
+      localStorage.setItem('userRole', user.userType || '');
+    }
+    
+    return user;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
@@ -121,6 +139,10 @@ export const getCurrentUser = () => {
  */
 export const logoutUser = () => {
   localStorage.removeItem('currentUser');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userFirstName');
+  localStorage.removeItem('userLastName');
+  localStorage.removeItem('userRole');
 };
 
 /**

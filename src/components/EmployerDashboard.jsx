@@ -48,35 +48,70 @@ const EmployerDashboard = () => {
   });
 
   useEffect(() => {
-    // Load user profile
-    const profile = getUserProfile();
-    setUserProfile(profile);
-    setEditedProfile(profile);
+    // Function to load applications and refresh data
+    const loadData = () => {
+      // Load user profile
+      const profile = getUserProfile();
+      setUserProfile(profile);
+      setEditedProfile(profile);
+      
+      // Load company info from localStorage if it exists
+      const savedCompanyInfo = localStorage.getItem('companyInfo');
+      if (savedCompanyInfo) {
+        const parsedCompanyInfo = JSON.parse(savedCompanyInfo);
+        setCompanyInfo(parsedCompanyInfo);
+        setEditedCompany(parsedCompanyInfo);
+      } else {
+        setEditedCompany(companyInfo);
+      }
+      
+      // Load company logo from localStorage if it exists
+      const savedLogo = localStorage.getItem('companyLogo');
+      if (savedLogo) {
+        setCompanyLogo(savedLogo);
+      }
+      
+      // Load job applications
+      const allApplications = getJobApplications();
+      
+      // Enhance applications with user details if missing
+      const enhancedApplications = allApplications.map(app => {
+        if (!app.userName && app.userEmail) {
+          // Try to find user details from users in localStorage
+          const users = JSON.parse(localStorage.getItem('users') || '[]');
+          const user = users.find(u => u.email === app.userEmail);
+          
+          if (user) {
+            return {
+              ...app,
+              userName: `${user.firstName} ${user.lastName}`.trim()
+            };
+          }
+        }
+        return app;
+      });
+      
+      // Save enhanced applications if needed
+      if (JSON.stringify(enhancedApplications) !== JSON.stringify(allApplications)) {
+        localStorage.setItem('jobApplications', JSON.stringify(enhancedApplications));
+      }
+      
+      setApplications(enhancedApplications);
+      
+      // Filter applications by status
+      setPendingApplications(enhancedApplications.filter(app => app.status === 'pending'));
+      setApprovedApplications(enhancedApplications.filter(app => app.status === 'approved'));
+      setRejectedApplications(enhancedApplications.filter(app => app.status === 'rejected'));
+    };
     
-    // Load company info from localStorage if it exists
-    const savedCompanyInfo = localStorage.getItem('companyInfo');
-    if (savedCompanyInfo) {
-      const parsedCompanyInfo = JSON.parse(savedCompanyInfo);
-      setCompanyInfo(parsedCompanyInfo);
-      setEditedCompany(parsedCompanyInfo);
-    } else {
-      setEditedCompany(companyInfo);
-    }
+    // Load data immediately
+    loadData();
     
-    // Load company logo from localStorage if it exists
-    const savedLogo = localStorage.getItem('companyLogo');
-    if (savedLogo) {
-      setCompanyLogo(savedLogo);
-    }
+    // Set up interval to refresh data periodically
+    const intervalId = setInterval(loadData, 5000);
     
-    // Load job applications
-    const allApplications = getJobApplications();
-    setApplications(allApplications);
-    
-    // Filter applications by status
-    setPendingApplications(allApplications.filter(app => app.status === 'pending'));
-    setApprovedApplications(allApplications.filter(app => app.status === 'approved'));
-    setRejectedApplications(allApplications.filter(app => app.status === 'rejected'));
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleApprove = (applicationId) => {
@@ -91,6 +126,15 @@ const EmployerDashboard = () => {
       setApprovedApplications(updatedApplications.filter(app => app.status === 'approved'));
       
       alert('Application approved successfully. The job seeker can now submit timesheets.');
+      
+      // Force refresh to show updated applicant details
+      setTimeout(() => {
+        const refreshedApplications = getJobApplications();
+        setApplications(refreshedApplications);
+        setPendingApplications(refreshedApplications.filter(app => app.status === 'pending'));
+        setApprovedApplications(refreshedApplications.filter(app => app.status === 'approved'));
+        setRejectedApplications(refreshedApplications.filter(app => app.status === 'rejected'));
+      }, 500);
     }
   };
 
@@ -104,6 +148,15 @@ const EmployerDashboard = () => {
       setApplications(updatedApplications);
       setPendingApplications(updatedApplications.filter(app => app.status === 'pending'));
       setRejectedApplications(updatedApplications.filter(app => app.status === 'rejected'));
+      
+      // Force refresh to show updated applicant details
+      setTimeout(() => {
+        const refreshedApplications = getJobApplications();
+        setApplications(refreshedApplications);
+        setPendingApplications(refreshedApplications.filter(app => app.status === 'pending'));
+        setApprovedApplications(refreshedApplications.filter(app => app.status === 'approved'));
+        setRejectedApplications(refreshedApplications.filter(app => app.status === 'rejected'));
+      }, 500);
     }
   };
 

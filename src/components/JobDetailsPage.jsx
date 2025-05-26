@@ -53,16 +53,53 @@ const JobDetailsPage = () => {
   const handleApply = () => {
     if (!job) return;
     
-    // In a real app, this would be an API call
-    const appliedJobs = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
-    if (!appliedJobs.includes(job.id)) {
-      appliedJobs.push(job.id);
-      localStorage.setItem('appliedJobs', JSON.stringify(appliedJobs));
-      setIsApplied(true);
-      
-      // Add notification for job application
-      addJobApplicationNotification(job.title, job.company);
+    // Get current user info from localStorage
+    const userEmail = localStorage.getItem('userEmail');
+    const firstName = localStorage.getItem('userFirstName') || '';
+    const lastName = localStorage.getItem('userLastName') || '';
+    
+    if (!userEmail) {
+      alert('Please log in to apply for jobs');
+      navigate('/login');
+      return;
     }
+    
+    // Create application object
+    const application = {
+      jobId: job.id,
+      jobTitle: job.title,
+      companyName: job.company,
+      userEmail: userEmail,
+      userName: `${firstName} ${lastName}`.trim(),
+      userId: userEmail,
+      resume: 'resume.pdf', // In a real app, this would be the actual resume file
+      coverLetter: 'I am interested in this position and believe my skills match your requirements.',
+    };
+    
+    // Submit application using applicationService
+    import('../services/applicationService').then(({ submitJobApplication }) => {
+      const result = submitJobApplication(application);
+      
+      if (result.success) {
+        // Update local state
+        const appliedJobs = JSON.parse(localStorage.getItem('appliedJobs') || '[]');
+        if (!appliedJobs.includes(job.id)) {
+          appliedJobs.push(job.id);
+          localStorage.setItem('appliedJobs', JSON.stringify(appliedJobs));
+          setIsApplied(true);
+          
+          // Add notification for job application
+          addJobApplicationNotification(job.title, job.company, job.id);
+          
+          alert('Application submitted successfully!');
+        }
+      } else {
+        alert(result.message || 'Failed to submit application');
+      }
+    }).catch(error => {
+      console.error('Error submitting application:', error);
+      alert('An error occurred while submitting your application');
+    });
   };
 
   const handleAcceptOffer = () => {
